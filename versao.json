@@ -1,5 +1,5 @@
 {
-    "apkUrl":  "https://gabrielserpa242.github.io/impulso/apk/impulso.apk",
-    "message":  "Nova versao do Impulso disponivel.",
-    "apkVersion":  "1.4"
+  "apkVersion": "1.4",
+  "apkUrl": "https://gabrielserpa242.github.io/impulso/apk/impulso.apk",
+  "message": "Nova versão: abas Livros e Hábitos, leitor de PDF, player de áudio e notificação diária."
 }

@@ -1,4 +1,4 @@
-const CACHE = 'impulso-v16';
+const CACHE = 'impulso-1.4';
 
 const PRECACHE = [
   './',

@@ -5682,11 +5682,14 @@ function drawAndDownload(){
     const Media = nativePlugin('Media');
     if(Media){
       try{
-        await Media.savePhoto({ path: dataUrl });
+        await Media.savePhoto({
+          path: dataUrl,
+          fileName: 'impulso_' + Date.now()
+        });
         alert('Imagem salva na galeria.');
       }catch(e){
         console.error(e);
-        alert('Não foi possível salvar a imagem.');
+        alert('Erro ao salvar: ' + (e && (e.code || e.message || JSON.stringify(e))));
       }
       return;
     }

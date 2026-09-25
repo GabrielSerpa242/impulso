@@ -27,8 +27,6 @@
     background:var(--bg);
     color:var(--ink);
     font-family:'Inter',sans-serif;
-    padding-top:env(safe-area-inset-top,0px);
-    padding-bottom:env(safe-area-inset-bottom,0px);
     min-height:100%;
   }
   .wrap{
@@ -36,10 +34,7 @@
     margin:0 auto;
     padding:28px 20px 40px;
   }
-  header{
-    margin-bottom:22px;
-  }
-  header .eyebrow{
+  .app-header .eyebrow{
     font-size:13px;
     color:var(--amber);
     letter-spacing:.02em;
@@ -256,7 +251,7 @@
     position:fixed;
     left:0;
     right:0;
-    bottom:0;
+    bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom,0px));
     z-index:50;
     display:none;
     align-items:center;
@@ -291,6 +286,518 @@
     padding:2px 4px;
   }
 
+  /* ============ SHELL: header fixo + abas inferiores ============ */
+  :root{
+    --header-h:66px;
+    --tabbar-h:60px;
+  }
+  .app-header{
+    position:fixed;
+    top:0; left:0; right:0;
+    z-index:40;
+    background:rgba(21,19,15,.93);
+    backdrop-filter:saturate(140%) blur(12px);
+    -webkit-backdrop-filter:saturate(140%) blur(12px);
+    border-bottom:1px solid var(--line);
+    padding-top:env(safe-area-inset-top,0px);
+  }
+  .app-header .hdr{
+    max-width:460px;
+    margin:0 auto;
+    padding:11px 20px 12px;
+  }
+  .app-header .eyebrow{
+    font-size:10.5px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+  }
+  .app-header h1{
+    font-size:21px;
+    margin:2px 0 0;
+  }
+  .app-header p{ display:none; }
+  @media (min-height:730px){
+    .app-header h1{ font-size:24px; }
+    .app-header p{ display:block; font-size:13px; margin-top:3px; }
+  }
+
+  main.wrap{
+    padding-top:calc(var(--header-h) + 26px);
+    padding-bottom:calc(var(--tabbar-h) + 40px);
+  }
+  @media (min-height:730px){
+    main.wrap{ padding-top:calc(var(--header-h) + 52px); }
+  }
+
+  .tabbar{
+    position:fixed;
+    left:0; right:0; bottom:0;
+    z-index:45;
+    display:flex;
+    background:rgba(21,19,15,.95);
+    backdrop-filter:saturate(140%) blur(12px);
+    -webkit-backdrop-filter:saturate(140%) blur(12px);
+    border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  .tab-btn{
+    flex:1;
+    background:transparent;
+    border:none;
+    color:var(--ink-dim);
+    padding:7px 2px 8px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:3px;
+    font-family:'Inter',sans-serif;
+    font-size:10.5px;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    transition:color .15s;
+  }
+  .tab-btn svg{ width:21px; height:21px; display:block; }
+  .tab-btn.active{ color:var(--amber); }
+  .tab[hidden]{ display:none; }
+
+  /* ============ LIVROS ============ */
+  .tab-intro{
+    color:var(--ink-dim);
+    font-size:13.5px;
+    line-height:1.5;
+    margin:0 0 14px;
+  }
+  .books-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+  .book-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:hidden;
+    padding:0;
+    text-align:left;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .book-card:active{ transform:scale(.985); }
+  .book-cover{ display:block; width:100%; aspect-ratio:2/3; background:#0b0a08; }
+  .book-cover svg{ display:block; width:100%; height:100%; }
+  .book-info{ padding:9px 10px 11px; }
+  .book-card .book-title{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:14px;
+    line-height:1.25;
+    color:var(--ink);
+  }
+  .book-card .book-author{
+    font-size:11.5px;
+    color:var(--ink-dim);
+    margin-top:3px;
+  }
+  .empty-note{
+    border:1px dashed var(--line);
+    border-radius:12px;
+    padding:18px 16px;
+    color:var(--ink-dim);
+    font-size:13px;
+    line-height:1.55;
+    text-align:center;
+  }
+
+  /* ============ SHEET / MODAL ============ */
+  .backdrop{
+    position:fixed;
+    inset:0;
+    z-index:60;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    background:rgba(0,0,0,.72);
+  }
+  .backdrop[hidden]{ display:none; }
+  .sheet{
+    width:100%;
+    max-width:460px;
+    max-height:88vh;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-bottom:none;
+    border-radius:18px 18px 0 0;
+    padding:16px 20px calc(20px + env(safe-area-inset-bottom,0px));
+    animation:sheetUp .22s ease;
+  }
+  @keyframes sheetUp{ from{ transform:translateY(22px); opacity:.35; } to{ transform:none; opacity:1; } }
+  .sheet-grip{
+    width:38px; height:4px; border-radius:2px;
+    background:var(--line);
+    margin:0 auto 14px;
+  }
+  .sheet-head{ display:flex; gap:14px; align-items:flex-start; }
+  .sheet-cover{
+    width:104px; flex:0 0 104px;
+    border-radius:8px; overflow:hidden;
+    border:1px solid var(--line);
+    box-shadow:0 8px 22px rgba(0,0,0,.45);
+  }
+  .sheet-cover svg{ display:block; width:100%; height:100%; }
+  .sheet h2{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:20px;
+    line-height:1.2;
+    margin:0 0 5px;
+  }
+  .sheet .byline{ color:var(--ink-dim); font-size:13px; }
+  .theme-tag{
+    display:inline-block;
+    margin-top:9px;
+    border:1px solid var(--amber-dim);
+    color:var(--amber);
+    border-radius:999px;
+    padding:3px 10px;
+    font-size:11px;
+    letter-spacing:.04em;
+  }
+  .synopsis{
+    color:var(--ink);
+    font-size:14px;
+    line-height:1.6;
+    margin:16px 0 12px;
+  }
+  .facts{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  .fact{
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:7px 11px;
+    font-size:12px;
+    color:var(--ink-dim);
+  }
+  .fact b{ color:var(--ink); font-weight:600; }
+  .sheet .controls{ margin-bottom:0; }
+  .media-hint{
+    margin-top:12px;
+    font-size:11.5px;
+    line-height:1.5;
+    color:var(--ink-dim);
+    text-align:center;
+  }
+
+  /* ============ LEITOR DE PDF ============ */
+  .reader{
+    position:fixed;
+    inset:0;
+    z-index:80;
+    background:#0b0a08;
+    display:flex;
+    flex-direction:column;
+  }
+  .reader[hidden]{ display:none; }
+  .reader-bar{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:calc(8px + env(safe-area-inset-top,0px)) 8px 8px;
+    background:var(--bg);
+    border-bottom:1px solid var(--line);
+  }
+  .reader-bar .r-title{
+    flex:1;
+    min-width:0;
+    font-size:12.5px;
+    color:var(--ink-dim);
+    text-align:center;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .icon-btn{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink);
+    width:34px; height:34px;
+    border-radius:9px;
+    font-size:15px;
+    line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    flex:0 0 auto;
+  }
+  .icon-btn:disabled{ opacity:.35; cursor:default; }
+  .reader-pages{
+    flex:1;
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+    padding:14px 12px 24px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+  }
+  .reader-pages canvas{
+    max-width:100%;
+    height:auto;
+    background:#fff;
+    border-radius:3px;
+    box-shadow:0 6px 26px rgba(0,0,0,.55);
+  }
+  .reader-msg{
+    margin:auto;
+    color:var(--ink-dim);
+    font-size:13px;
+    text-align:center;
+    line-height:1.6;
+    padding:0 28px;
+  }
+
+  /* ============ PLAYER DE ÁUDIO ============ */
+  .player{
+    position:fixed;
+    left:0; right:0;
+    bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom,0px));
+    z-index:50;
+    max-width:460px;
+    margin:0 auto;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-bottom:none;
+    border-radius:14px 14px 0 0;
+    padding:11px 14px 13px;
+    box-shadow:0 -8px 26px rgba(0,0,0,.5);
+  }
+  .player[hidden]{ display:none; }
+  .player-top{ display:flex; align-items:center; gap:10px; margin-bottom:9px; }
+  .p-thumb{
+    width:34px; height:51px; flex:0 0 34px;
+    border-radius:4px; overflow:hidden;
+    background:#000;
+  }
+  .p-thumb svg{ display:block; width:100%; height:100%; }
+  .p-meta{ flex:1; min-width:0; }
+  .p-title{
+    font-size:12.5px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .p-sub{ font-size:10.5px; color:var(--ink-dim); margin-top:2px; }
+  .p-btns{ display:flex; align-items:center; gap:8px; }
+  .p-play{
+    width:40px; height:40px; flex:0 0 40px;
+    border-radius:50%;
+    border:none;
+    background:var(--amber);
+    color:#15130f;
+    font-size:15px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .p-speed{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--amber);
+    border-radius:8px;
+    padding:8px 10px;
+    font-size:12px;
+    font-weight:600;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+    min-width:44px;
+  }
+  .p-times{
+    display:flex;
+    justify-content:space-between;
+    font-size:10.5px;
+    color:var(--ink-dim);
+    margin-top:5px;
+  }
+  input[type=range].rng{
+    -webkit-appearance:none;
+    appearance:none;
+    width:100%;
+    background:transparent;
+    display:block;
+    margin:0;
+  }
+  input[type=range].rng::-webkit-slider-runnable-track{
+    height:4px; border-radius:2px; background:var(--line);
+  }
+  input[type=range].rng::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:14px; height:14px; margin-top:-5px;
+    border-radius:50%; background:var(--amber);
+  }
+  input[type=range].rng::-moz-range-track{ height:4px; border-radius:2px; background:var(--line); }
+  input[type=range].rng::-moz-range-thumb{ width:14px; height:14px; border:none; border-radius:50%; background:var(--amber); }
+
+  /* ============ HÁBITOS ============ */
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .panel h3{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:17px;
+    margin:0 0 3px;
+  }
+  .panel .sub{ color:var(--ink-dim); font-size:12.5px; margin:0 0 14px; line-height:1.5; }
+  .streak-row{ display:flex; align-items:center; gap:16px; }
+  .streak-num{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:44px;
+    line-height:1;
+    color:var(--amber);
+  }
+  .streak-cap{ font-size:12px; color:var(--ink-dim); line-height:1.5; }
+  .bar{
+    height:7px;
+    border-radius:4px;
+    background:var(--line);
+    overflow:hidden;
+    margin-top:14px;
+  }
+  .bar > i{
+    display:block;
+    height:100%;
+    background:var(--amber);
+    border-radius:4px;
+    transition:width .3s ease;
+  }
+  .habit-list{ display:flex; flex-direction:column; gap:9px; }
+  .habit-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    width:100%;
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:11px;
+    padding:12px 14px;
+    cursor:pointer;
+    text-align:left;
+    font-family:'Inter',sans-serif;
+    color:var(--ink);
+    font-size:14px;
+  }
+  .habit-row.done{ border-color:var(--amber-dim); background:rgba(216,161,74,.08); }
+  .tick{
+    width:22px; height:22px; flex:0 0 22px;
+    border-radius:50%;
+    border:1.5px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px;
+    color:transparent;
+  }
+  .habit-row.done .tick{
+    background:var(--amber);
+    border-color:var(--amber);
+    color:#15130f;
+  }
+  .habit-row .h-label{ flex:1; }
+  .habit-row .h-key{ font-size:11px; color:var(--ink-dim); }
+  .heat{ display:flex; gap:5px; margin-top:14px; }
+  .heat i{
+    flex:1;
+    height:26px;
+    border-radius:4px;
+    background:#241f1a;
+    border:1px solid transparent;
+  }
+  .heat i.on{ background:var(--amber); opacity:.9; }
+  .heat i.today{ border-color:var(--ink); }
+  .heat-cap{ font-size:10.5px; color:var(--ink-dim); margin-top:7px; }
+
+  /* ============ AJUSTES ============ */
+  .row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:13px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .row:last-child{ border-bottom:none; }
+  .row .r-main{ flex:1; min-width:0; }
+  .row .r-title{ font-size:14px; }
+  .row .r-sub{ font-size:11.5px; color:var(--ink-dim); margin-top:3px; line-height:1.45; }
+  .switch{
+    flex:0 0 46px;
+    width:46px; height:27px;
+    border-radius:14px;
+    border:1px solid var(--line);
+    background:#241f1a;
+    position:relative;
+    cursor:pointer;
+    padding:0;
+  }
+  .switch::after{
+    content:'';
+    position:absolute;
+    top:2px; left:2px;
+    width:21px; height:21px;
+    border-radius:50%;
+    background:var(--ink-dim);
+    transition:transform .18s ease, background .18s ease;
+  }
+  .switch.on{ border-color:var(--amber); background:rgba(216,161,74,.22); }
+  .switch.on::after{ transform:translateX(19px); background:var(--amber); }
+  input[type=time].time-in{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink);
+    border-radius:9px;
+    padding:9px 11px;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+  }
+  .mini-btn{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink);
+    border-radius:9px;
+    padding:9px 13px;
+    font-size:12.5px;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .mini-btn.primary{
+    background:var(--amber);
+    border-color:var(--amber);
+    color:#15130f;
+    font-weight:600;
+  }
+  .mini-btn:disabled{ opacity:.4; cursor:default; }
+
+  #toast{
+    position:fixed;
+    left:50%;
+    bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom,0px) + 18px);
+    transform:translateX(-50%) translateY(8px);
+    z-index:95;
+    background:#2b2620;
+    border:1px solid var(--line);
+    color:var(--ink);
+    padding:11px 16px;
+    border-radius:10px;
+    font-size:13px;
+    max-width:88vw;
+    text-align:center;
+    line-height:1.45;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;
+  }
+  #toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
   #dl-canvas{ display:none; }
 
   @media (prefers-color-scheme: light){
@@ -301,56 +808,107 @@
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
+<header class="app-header">
+  <div class="hdr">
     <div class="eyebrow">Impulso</div>
-    <h1>Uma frase para hoje</h1>
-    <p>Escolha um tema, gere sua frase e baixe pronta para o story.</p>
-  </header>
+    <h1 id="hdrTitle">Uma frase para hoje</h1>
+    <p id="hdrDesc">Escolha um tema, gere sua frase e baixe pronta para o story.</p>
+  </div>
+</header>
 
-  <div class="themes" id="themes"></div>
+<main class="wrap">
 
-  <div class="stage">
-    <div class="stage-inner bg-dusk" id="stageInner">
-      <img id="bgImg" alt="" />
-      <div class="scrim"></div>
-      <div class="quote-mark">“</div>
-      <div class="quote-text" id="quoteText">O esforço de hoje é a força de amanhã.</div>
-      <div class="quote-tag"><span id="tagLeft">FOCO</span></div>
+  <section class="tab" id="tab-frases">
+    <div class="themes" id="themes"></div>
+
+    <div class="stage">
+      <div class="stage-inner bg-dusk" id="stageInner">
+        <img id="bgImg" alt="" />
+        <div class="scrim"></div>
+        <div class="quote-mark">“</div>
+        <div class="quote-text" id="quoteText">O esforço de hoje é a força de amanhã.</div>
+        <div class="quote-tag"><span id="tagLeft">FOCO</span></div>
+      </div>
     </div>
-  </div>
 
-  <div class="controls" style="margin-bottom:10px;">
-    <button class="primary" id="btnGerarFrase">Gerar frase</button>
-  </div>
+    <div class="controls" style="margin-bottom:10px;">
+      <button class="primary" id="btnGerarFrase">Gerar frase</button>
+    </div>
 
-  <div class="section-label">Tipo de letra</div>
-  <div class="themes" id="fontThemes"></div>
+    <div class="section-label">Tipo de letra</div>
+    <div class="themes" id="fontThemes"></div>
 
-  <div class="section-label">Fundo da imagem</div>
-  <div class="source-toggle">
-    <button class="toggle-btn active" id="srcGerado">Gerar Imagem</button>
-  </div>
+    <div class="section-label">Fundo da imagem</div>
+    <div class="source-toggle">
+      <button class="toggle-btn active" id="srcGerado">Gerar Imagem</button>
+    </div>
 
-  <div class="themes" id="bgThemes"></div>
+    <div class="themes" id="bgThemes"></div>
 
-  <div class="attribution" id="attribution"></div>
+    <div class="attribution" id="attribution"></div>
 
-  <div class="palette-row" id="palette"></div>
+    <div class="palette-row" id="palette"></div>
 
-  <div class="controls">
-    <button class="secondary" id="btnShare">Compartilhar imagem</button>
-    <button class="primary" id="btnSave">Baixar imagem</button>
-  </div>
+    <div class="controls">
+      <button class="secondary" id="btnShare">Compartilhar imagem</button>
+      <button class="primary" id="btnSave">Baixar imagem</button>
+    </div>
 
-  <footer>Toque em "Gerar frase" quantas vezes quiser.</footer>
+    <footer>Toque em "Gerar frase" quantas vezes quiser.</footer>
+  </section>
+
+  <section class="tab" id="tab-livros" hidden></section>
+  <section class="tab" id="tab-habitos" hidden></section>
+  <section class="tab" id="tab-ajustes" hidden></section>
+
+</main>
+
+<nav class="tabbar" id="tabbar" aria-label="Seções"></nav>
+
+<div class="backdrop" id="bookSheet" hidden>
+  <div class="sheet" id="sheetBody"></div>
 </div>
+
+<div class="reader" id="reader" hidden>
+  <div class="reader-bar">
+    <button class="icon-btn" id="rClose" aria-label="Fechar">&times;</button>
+    <button class="icon-btn" id="rPrev" aria-label="Página anterior">&#8249;</button>
+    <div class="r-title"><span id="rTitle">&nbsp;</span> &middot; <span id="rPage">1/1</span></div>
+    <button class="icon-btn" id="rNext" aria-label="Próxima página">&#8250;</button>
+    <button class="icon-btn" id="rZoomOut" aria-label="Reduzir">&#8722;</button>
+    <button class="icon-btn" id="rZoomIn" aria-label="Ampliar">&#43;</button>
+  </div>
+  <div class="reader-pages" id="rPages"></div>
+</div>
+
+<div class="player" id="player" hidden>
+  <div class="player-top">
+    <div class="p-thumb" id="pThumb"></div>
+    <div class="p-meta">
+      <div class="p-title" id="pTitle">&nbsp;</div>
+      <div class="p-sub" id="pSub">&nbsp;</div>
+    </div>
+    <button class="icon-btn" id="pClose" aria-label="Fechar player">&times;</button>
+  </div>
+  <input type="range" class="rng" id="pSeek" min="0" max="1000" value="0" step="1" />
+  <div class="p-times"><span id="pCur">0:00</span><span id="pDur">0:00</span></div>
+  <div class="p-btns" style="margin-top:10px;">
+    <button class="mini-btn" id="pBack">-15s</button>
+    <button class="p-play" id="pPlay" aria-label="Tocar">&#9654;</button>
+    <button class="mini-btn" id="pFwd">+30s</button>
+    <button class="p-speed" id="pSpeed">1x</button>
+  </div>
+</div>
+
+<audio id="audioEl" preload="none"></audio>
 
 <div id="updateBanner">
   <span class="upd-msg">Nova versão do Impulso disponível.</span>
   <button class="upd-btn" id="updateBtn">Baixar</button>
   <button class="upd-close" id="updateClose" aria-label="Fechar">&times;</button>
 </div>
+
+<div id="toast"></div>
 
 <canvas id="dl-canvas" width="1080" height="1920"></canvas>
 
@@ -5584,7 +6142,8 @@ function newQuote(){
   const idx = pool[Math.floor(Math.random()*pool.length)];
   usedIndexes[currentTheme].add(idx);
   quoteText.textContent = theme.quotes[idx];
-  tagLeft.textContent = theme.tag;
+  tagLeft.textContent = theme.label.toUpperCase();
+  usageBump('frases', currentTheme);
 }
 
 function drawBackground(ctx, W, H, onDone){
@@ -5794,6 +6353,1023 @@ document.getElementById('srcGerado').onclick = (e)=>{
   fetchUnsplashBg(currentBgCategory);
 };
 
+/* ==================================================================
+   SHELL — utilidades
+   ================================================================== */
+const $ = (id)=>document.getElementById(id);
+const esc = (s)=>String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const store = {
+  get(key, fallback){
+    try{
+      const raw = localStorage.getItem('impulso_' + key);
+      return raw === null ? fallback : JSON.parse(raw);
+    }catch(e){ return fallback; }
+  },
+  set(key, value){
+    try{ localStorage.setItem('impulso_' + key, JSON.stringify(value)); }
+    catch(e){ console.warn('[store] falha ao gravar', key, e); }
+  }
+};
+
+let toastTimer = null;
+function toast(msg){
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 3000);
+}
+
+/* ==================================================================
+   USO POR TEMA — alimenta a notificação diária e recomendações futuras
+   ================================================================== */
+function usageData(){
+  const u = store.get('usage_v1', null);
+  if(u && u.frases && u.livros) return u;
+  return { frases:{}, livros:{} };
+}
+function usageBump(kind, theme){
+  if(!theme) return;
+  const u = usageData();
+  u[kind][theme] = (u[kind][theme] || 0) + 1;
+  store.set('usage_v1', u);
+}
+function usageTop(kind){
+  const map = usageData()[kind] || {};
+  let best = null, bestCount = 0;
+  Object.keys(map).forEach(k=>{
+    if(map[k] > bestCount){ bestCount = map[k]; best = k; }
+  });
+  return best;
+}
+function themeLabel(key){
+  return (THEMES[key] && THEMES[key].label) || 'Foco';
+}
+
+/* ==================================================================
+   ABAS — navegação inferior
+   ================================================================== */
+const TABS = [
+  { key:'frases', label:'Frases', h1:'Uma frase para hoje',
+    desc:'Escolha um tema, gere sua frase e baixe pronta para o story.',
+    icon:'<path d="M6 4h12M6 9h9M6 14h6"/><path d="M17 16.5 19 19l3-3.5"/>' },
+  { key:'livros', label:'Livros', h1:'Acervo de livros',
+    desc:'Resumos, PDFs e áudios dos temas que você mais usa.',
+    icon:'<path d="M12 6.5C10.5 5 8.5 4.5 5 4.8v12.4c3.5-.3 5.5.2 7 1.7 1.5-1.5 3.5-2 7-1.7V4.8c-3.5-.3-5.5.2-7 1.7z"/><path d="M12 6.5v12.4"/>' },
+  { key:'habitos', label:'Hábitos', h1:'Hábitos de hoje',
+    desc:'Marque de 3 a 5 hábitos todos os dias e construa sua sequência.',
+    icon:'<rect x="3.5" y="4" width="17" height="16.5" rx="2.5"/><path d="M8 12.2l2.7 2.7L16 9.6"/>' },
+  { key:'ajustes', label:'Ajustes', h1:'Ajustes',
+    desc:'Notificação diária, horário e preferências do Impulso.',
+    icon:'<circle cx="12" cy="12" r="3.2"/><path d="M12 3.2v2.4M12 18.4v2.4M3.2 12h2.4M18.4 12h2.4M5.8 5.8l1.7 1.7M16.5 16.5l1.7 1.7M18.2 5.8l-1.7 1.7M7.5 16.5l-1.7 1.7"/>' }
+];
+
+let activeTab = 'frases';
+const tabReady = {};
+
+function buildTabbar(){
+  const bar = $('tabbar');
+  bar.innerHTML = '';
+  TABS.forEach(t=>{
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn';
+    btn.dataset.tab = t.key;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+      + t.icon + '</svg><span>' + t.label + '</span>';
+    btn.onclick = ()=>switchTab(t.key);
+    bar.appendChild(btn);
+  });
+}
+
+function switchTab(key){
+  const tab = TABS.filter(t=>t.key === key)[0] || TABS[0];
+  activeTab = tab.key;
+
+  document.querySelectorAll('.tab').forEach(sec=>{ sec.hidden = (sec.id !== 'tab-' + tab.key); });
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab === tab.key));
+  $('hdrTitle').textContent = tab.h1;
+  $('hdrDesc').textContent = tab.desc;
+
+  closeSheet();
+  if(tab.key !== 'livros') closePlayer();
+  if(!$('reader').hidden) closeReader();
+
+  if(!tabReady[tab.key]){
+    tabReady[tab.key] = true;
+    if(tab.key === 'livros') renderLivros();
+    if(tab.key === 'habitos') renderHabitos();
+    if(tab.key === 'ajustes') renderAjustes();
+  }else if(tab.key === 'ajustes'){
+    refreshAjustes();
+  }
+
+  window.scrollTo(0, 0);
+  store.set('tab_v1', tab.key);
+}
+
+/* ==================================================================
+   LIVROS — catálogo, capas e detalhe
+   Campos pdfUrl / audioUrl / coverUrl ficam vazios de propósito:
+   preencha-os com os arquivos reais para ativar "Ler" e "Ouvir".
+   Exemplo: pdfUrl:'https://.../habitos-atomicos.pdf'
+   ================================================================== */
+const BOOK_COLORS = {
+  foco:      ['#e0b062','#3a2a0e'],
+  disciplina:['#6f9ad8','#101c30'],
+  academia:  ['#d1694f','#2e110b'],
+  dinheiro:  ['#63b184','#0b2416'],
+  recomeco:  ['#ab81d6','#1d1030']
+};
+
+const BOOKS = [
+  { id:'habitos-atomicos', theme:'disciplina', title:'Hábitos Atômicos', author:'James Clear',
+    pages:320, minutes:660, coverUrl:'', pdfUrl:'', audioUrl:'',
+    synopsis:'Pequenos hábitos melhoram 1% por dia e culminam em resultados enormes ao longo do tempo. O livro mostra como construir rotina, eliminar atritos e usar o sistema a seu favor.' },
+  { id:'disciplina-vence', theme:'disciplina', title:'A Disciplina Vence', author:'Angela Duckworth',
+    pages:300, minutes:600, coverUrl:'', pdfUrl:'', audioUrl:'',
+    synopsis:'Querer é um começo, mas o talento sozinho não garante nada. Duckworth mostra por que pessoas resilientes e focadas superam quem é mais talentoso, mas desiste antes do resultado.' },
+  { id:'arte-da-guerra', theme:'disciplina', title:'A Arte da Guerra', author:'Sun Tzu',
+    pages:128, minutes:240, coverUrl:'', pdfUrl:'', audioUrl:'',
+    synopsis:'Clássico da estratégia com princípios que valem para qualquer disputa. Conhecer o terreno, eleger o momento e concentrar o esforço onde ele decide o resultado.' },
+  { id:'mindset', theme:'foco', title:'Mindset', author:'Carol S. Dweck',
+    pages:252, minutes:540, coverUrl:'', pdfUrl:'', audioUrl:'',
+    synopsis:'Crenças sobre o próprio talento mudam o desempenho. Quem entende que capacidade cresce com o esforço enfrenta o fracasso como dado, não como veredito.' },
+  { id:'leis-do-poder', theme:'foco', title:'As 48 Leis do Poder', author:'Robert Greene',
+    pages:560, minutes:1080, coverUrl:'', pdfUrl:'', audioUrl:'',
+    synopsis:'Um mapa das estratégias de influência usadas ao longo da história. Serve tanto para reconhecer quando você é manipulado quanto para jogar o jogo com consciência.' },
+  { id:'arte-de-fazer-coisas', theme:'foco', title:'A Arte de Fazer Coisas', author:'Oliver Burkeman',
+    pages:224, minutes:420, coverUrl:'', pdfUrl:'', audioUrl:'',
+    synopsis:'O caminho melhor não é fazer tudo, é escolher o que importa e aceitar o custo do resto. Um convite productivo à vida exatamente como ela é, e não como imaginamos.' },
+  { id:'transforme-seu-corpo', theme:'academia', title:'Transforme seu Corpo, Transforme sua Vida', author:'Bob Harper',
+    pages:288, minutes:540, coverUrl:'', pdfUrl:'', audioUrl:'',
+    synopsis:'O que você faz com o corpo aparece na cabeça, no humor e na disciplina. Harper separa o treino útil da Motivação de fachada e mostra como montar uma rotina que você realmente mantém.' },
+  { id:'primal-blueprint', theme:'academia', title:'Primal Blueprint', author:'Mark Sisson',
+    pages:384, minutes:780, coverUrl:'', pdfUrl:'', audioUrl:'',
+    synopsis:'Um estilo de vida que imita o movimento do homem primitivo: sono, alimentação e treino sem atalhos. Simples de seguir, difícil de desistir quando os hábitos entram no lugar.' },
+  { id:'homem-mais-rico', theme:'dinheiro', title:'O Homem Mais Rico da Babilônia', author:'George S. Clason',
+    pages:224, minutes:420, coverUrl:'', pdfUrl:'', audioUrl:'',
+    synopsis:'Um conjunto de parábolas sobre dinheiro e trabalho que ensina a parte que a escola não ensina. Pague-se primeiro, controle as despesas e faça o dinheiro trabalhar por você.' },
+  { id:'pai-rico', theme:'dinheiro', title:'Pai Rico, Filho Pobre', author:'Robert T. Kiyosaki',
+    pages:256, minutes:480, coverUrl:'', pdfUrl:'', audioUrl:'',
+    synopsis:'A distinção entre ativos e passivos muda a forma de olhar a carreira. O autor propõe trocar emprego por renda e construir patrimônio em vez de consumir aparência.' },
+  { id:'em-busca-de-sentido', theme:'recomeco', title:'Em Busca de Sentido', author:'Viktor E. Frankl',
+    pages:200, minutes:420, coverUrl:'', pdfUrl:'', audioUrl:'',
+    synopsis:'Escrito a partir da experiência em um campo de concentração. Mesmo nas piores circunstâncias, o sentido é a última coisa que se perde — e o que permite recomeçar.' },
+  { id:'persist', theme:'recomeco', title:'PersIST', author:'Neil Pasricha',
+    pages:208, minutes:360, coverUrl:'', pdfUrl:'', audioUrl:'',
+    synopsis:'Uma coletânea de conselhos sobre insistência, reunida de centenas de entrevistas. Fala de quem já fracassou, voltou e continuou tentando depois do nono, décimo, décimo quinto passo.' }
+];
+
+let bookFilter = 'todos';
+
+function coverSvg(book, scope){
+  const colors = BOOK_COLORS[book.theme] || ['#d8a14a','#2a1c08'];
+  const gid = 'cg' + book.id + scope;
+  const words = book.title.split(' ');
+  const lines = [];
+  let line = '';
+  words.forEach(w=>{
+    const next = line ? line + ' ' + w : w;
+    if(next.length > 13 && line){ lines.push(line); line = w; }
+    else { line = next; }
+  });
+  if(line) lines.push(line);
+  const shown = lines.slice(0, 4);
+  const firstY = 296 - (shown.length - 1) * 16;
+
+  return '<svg viewBox="0 0 300 450" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + esc(book.title) + '">'
+    + '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2=".4" y2="1">'
+    + '<stop offset="0" stop-color="' + colors[0] + '"/>'
+    + '<stop offset="1" stop-color="' + colors[1] + '"/></linearGradient></defs>'
+    + '<rect width="300" height="450" fill="url(#' + gid + ')"/>'
+    + '<g fill="none" stroke="#ffffff" stroke-opacity=".15" stroke-width="1.3">'
+    + '<circle cx="256" cy="66" r="52"/><circle cx="256" cy="66" r="33"/>'
+    + '<path d="M0 384h300M0 402h300"/></g>'
+    + '<g fill="#ffffff">'
+    + shown.map((l,i)=>'<text x="26" y="' + (firstY + i * 32) + '" font-family="Fraunces, Georgia, serif" font-size="26" font-weight="500">' + esc(l) + '</text>').join('')
+    + '<text x="26" y="338" font-family="Inter, sans-serif" font-size="15" fill-opacity=".8">' + esc(book.author) + '</text>'
+    + '<text x="26" y="426" font-family="Inter, sans-serif" font-size="9.5" letter-spacing="2.2" fill-opacity=".55">' + esc(themeLabel(book.theme).toUpperCase()) + ' · IMPULSO</text>'
+    + '</g></svg>';
+}
+
+function renderLivros(){
+  const el = $('tab-livros');
+  const chips = ['todos'].concat(Object.keys(THEMES).filter(k=>{
+    return BOOKS.some(b=>b.theme === k);
+  }));
+
+  let html = '<p class="tab-intro">Cada livro tem um tema em comum com as frases. Toque para ver a sinopse e ouvir ou ler.</p>';
+  html += '<div class="themes" id="bookFilters">';
+  chips.forEach(key=>{
+    const label = key === 'todos' ? 'Todos' : themeLabel(key);
+    html += '<button class="theme-btn' + (key === bookFilter ? ' active' : '') + '" data-theme="' + key + '">' + esc(label) + '</button>';
+  });
+  html += '</div>';
+
+  const list = BOOKS.filter(b=>bookFilter === 'todos' || b.theme === bookFilter);
+  if(!list.length){
+    html += '<div class="empty-note">Nenhum livro neste tema ainda.</div>';
+  }else{
+    html += '<div class="books-grid">';
+    list.forEach(b=>{
+      html += '<button class="book-card" data-book="' + b.id + '">'
+        + '<span class="book-cover">' + coverSvg(b, 'g') + '</span>'
+        + '<span class="book-info">'
+        + '<span class="book-title">' + esc(b.title) + '</span>'
+        + '<span class="book-author">' + esc(b.author) + '</span>'
+        + '</span></button>';
+    });
+    html += '</div>';
+  }
+  el.innerHTML = html;
+
+  el.querySelectorAll('#bookFilters .theme-btn').forEach(btn=>{
+    btn.onclick = ()=>{ bookFilter = btn.dataset.theme; renderLivros(); };
+  });
+  el.querySelectorAll('.book-card').forEach(card=>{
+    card.onclick = ()=>openBookSheet(card.dataset.book);
+  });
+}
+
+function findBook(id){
+  return BOOKS.filter(b=>b.id === id)[0] || null;
+}
+
+function openBookSheet(id){
+  const book = findBook(id);
+  if(!book) return;
+  usageBump('livros', book.theme);
+
+  $('sheetBody').innerHTML =
+    '<div class="sheet-grip"></div>'
+    + '<div class="sheet-head">'
+    +   '<div class="sheet-cover">' + coverSvg(book, 's') + '</div>'
+    +   '<div>'
+    +     '<h2>' + esc(book.title) + '</h2>'
+    +     '<div class="byline">' + esc(book.author) + '</div>'
+    +     '<span class="theme-tag">' + esc(themeLabel(book.theme)) + '</span>'
+    +   '</div>'
+    + '</div>'
+    + '<p class="synopsis">' + esc(book.synopsis) + '</p>'
+    + '<div class="facts">'
+    +   '<div class="fact"><b>' + book.minutes + ' min</b> de áudio</div>'
+    +   '<div class="fact"><b>' + book.pages + '</b> páginas</div>'
+    + '</div>'
+    + '<div class="controls">'
+    +   '<button class="secondary" id="sheetListen">Ouvir</button>'
+    +   '<button class="primary" id="sheetRead">Ler</button>'
+    + '</div>'
+    + '<div class="media-hint" id="sheetHint"></div>';
+
+  $('bookSheet').hidden = false;
+
+  const missing = [];
+  if(!book.pdfUrl) missing.push('PDF');
+  if(!book.audioUrl) missing.push('áudio');
+  $('sheetHint').textContent = missing.length
+    ? 'Arquivo de ' + missing.join(' e ') + ' ainda não incluído neste exemplar.'
+    : '';
+
+  $('sheetRead').onclick = ()=>openReader(book);
+  $('sheetListen').onclick = ()=>{
+    closeSheet();
+    openPlayer(book);
+  };
+}
+
+function closeSheet(){
+  $('bookSheet').hidden = true;
+}
+
+/* ==================================================================
+   LEITOR DE PDF
+   ================================================================== */
+const PDFJS_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+let pdfjsLib = null;
+let pdfjsPending = null;
+const readerState = { doc:null, page:1, zoom:1, task:null };
+
+function loadPdfJs(){
+  if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if(pdfjsPending) return pdfjsPending;
+  pdfjsPending = new Promise((resolve, reject)=>{
+    const s = document.createElement('script');
+    s.src = PDFJS_BASE + 'pdf.min.js';
+    s.onload = ()=>{
+      if(!window.pdfjsLib){ reject(new Error('leitor indisponível')); return; }
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_BASE + 'pdf.worker.min.js';
+      pdfjsLib = window.pdfjsLib;
+      resolve(pdfjsLib);
+    };
+    s.onerror = ()=>reject(new Error('sem conexão para carregar o leitor'));
+    document.head.appendChild(s);
+  });
+  return pdfjsPending;
+}
+
+async function openReader(book){
+  $('reader').hidden = false;
+  $('rTitle').textContent = book.title;
+  $('rPages').innerHTML = '<div class="reader-msg"><span class="loading-dot"></span>Carregando PDF...</div>';
+  readerState.page = 1;
+  readerState.zoom = 1;
+
+  if(!book.pdfUrl){
+    $('rPages').innerHTML = '<div class="reader-msg">O PDF deste livro ainda não foi enviado.<br><br>Assim que o arquivo entrar no acervo, ele aparece aqui.</div>';
+    return;
+  }
+  try{
+    const lib = await loadPdfJs();
+    const res = await fetch(book.pdfUrl);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const buf = await res.arrayBuffer();
+    readerState.doc = await lib.getDocument({ data: new Uint8Array(buf) }).promise;
+    await renderReaderPage();
+  }catch(e){
+    console.error('[reader]', e);
+    $('rPages').innerHTML = '<div class="reader-msg">Não foi possível abrir o PDF.<br>' + esc(e && e.message ? e.message : 'erro desconhecido') + '</div>';
+  }
+}
+
+async function renderReaderPage(){
+  const doc = readerState.doc;
+  if(!doc) return;
+  const total = doc.numPages;
+  readerState.page = Math.min(Math.max(1, readerState.page), total);
+  $('rPage').textContent = readerState.page + '/' + total;
+  $('rPrev').disabled = readerState.page <= 1;
+  $('rNext').disabled = readerState.page >= total;
+
+  if(readerState.task){
+    try{ readerState.task.cancel(); }catch(e){}
+    readerState.task = null;
+  }
+  try{
+    const page = await doc.getPage(readerState.page);
+    const natural = page.getViewport({ scale:1 });
+    const available = $('rPages').clientWidth - 26;
+    const scale = Math.min(Math.max((available / natural.width) * readerState.zoom, 0.2), 3);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const viewport = page.getViewport({ scale: scale * dpr });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.floor(viewport.width));
+    canvas.height = Math.max(1, Math.floor(viewport.height));
+    canvas.style.width = Math.floor(viewport.width / dpr) + 'px';
+
+    const task = page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport });
+    readerState.task = task;
+    try{ await task.promise; }
+    catch(e){
+      if(e && e.name === 'RenderingCancelledException') return;
+      throw e;
+    }
+
+    $('rPages').innerHTML = '';
+    $('rPages').appendChild(canvas);
+    $('rPages').scrollTop = 0;
+  }catch(e){
+    if(e && e.name === 'RenderingCancelledException') return;
+    console.error('[reader] render', e);
+  }
+}
+
+function closeReader(){
+  if(readerState.task){
+    try{ readerState.task.cancel(); }catch(e){}
+    readerState.task = null;
+  }
+  if(readerState.doc){
+    const doc = readerState.doc;
+    readerState.doc = null;
+    try{ doc.destroy(); }catch(e){}
+  }
+  $('rPages').innerHTML = '';
+  $('reader').hidden = true;
+}
+
+/* ==================================================================
+   PLAYER DE ÁUDIO
+   ================================================================== */
+const SPEEDS = [1, 1.5, 2];
+const audio = $('audioEl');
+const playerState = { book:null, rate:1, lastSave:0 };
+
+function fmtTime(sec){
+  if(!isFinite(sec) || sec < 0) sec = 0;
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return m + ':' + (s < 10 ? '0' : '') + s;
+}
+
+function setPlayIcon(playing){
+  $('pPlay').innerHTML = playing ? '&#10074;&#10074;' : '&#9654;';
+}
+
+function openPlayer(book){
+  playerState.book = book;
+  playerState.rate = SPEEDS.indexOf(store.get('audio_rate', 1)) > -1 ? store.get('audio_rate', 1) : 1;
+
+  $('pTitle').textContent = book.title;
+  $('pSub').textContent = book.author;
+  $('pThumb').innerHTML = coverSvg(book, 'p');
+  $('pSpeed').textContent = playerState.rate + 'x';
+  $('pSeek').value = 0;
+  $('pCur').textContent = '0:00';
+  $('player').hidden = false;
+
+  if(!book.audioUrl){
+    // limpa qualquer audio anterior para nao tocar a trilha do livro errado
+    audio.pause();
+    audio.removeAttribute('src');
+    try{ audio.load(); }catch(e){}
+    $('pDur').textContent = '--:--';
+    $('pSeek').value = 0;
+    $('pCur').textContent = '0:00';
+    setPlayIcon(false);
+    toast('Áudio ainda não disponível para este livro.');
+    return;
+  }
+
+  $('pDur').textContent = fmtTime(book.minutes * 60);
+  audio.src = book.audioUrl;
+  audio.playbackRate = playerState.rate;
+
+  const savedPos = store.get('audio_pos_' + book.id, 0);
+  const onMeta = ()=>{
+    if(savedPos > 5 && savedPos < audio.duration - 10) audio.currentTime = savedPos;
+    $('pDur').textContent = fmtTime(audio.duration);
+    paintSeek();
+  };
+  audio.addEventListener('loadedmetadata', onMeta, { once:true });
+
+  const p = audio.play();
+  if(p && p.then) p.then(()=>setPlayIcon(true)).catch(()=>setPlayIcon(false));
+  else setPlayIcon(true);
+}
+
+function paintSeek(){
+  if(!audio.duration || !isFinite(audio.duration)) return;
+  $('pSeek').value = Math.round((audio.currentTime / audio.duration) * 1000);
+  $('pCur').textContent = fmtTime(audio.currentTime);
+}
+
+function saveAudioPos(){
+  if(!playerState.book || !playerState.book.audioUrl) return;
+  if(!isFinite(audio.currentTime)) return;
+  store.set('audio_pos_' + playerState.book.id, Math.floor(audio.currentTime));
+}
+
+function closePlayer(){
+  saveAudioPos();
+  audio.pause();
+  audio.removeAttribute('src');
+  try{ audio.load(); }catch(e){}
+  playerState.book = null;
+  $('player').hidden = true;
+}
+
+/* ==================================================================
+   HÁBITOS
+   ================================================================== */
+const HABIT_PRESETS = [
+  { id:'treinar',   label:'Treinar' },
+  { id:'caminhar',  label:'Caminhar 30 min' },
+  { id:'ler',       label:'Ler 20 min' },
+  { id:'estudar',   label:'Estudar' },
+  { id:'agua',      label:'Beber água' },
+  { id:'meditar',   label:'Meditar' },
+  { id:'acordar',   label:'Acordar no horário' },
+  { id:'dormir',    label:'Dormir cedo' },
+  { id:'anotar',    label:'Anotar o dia' },
+  { id:'gratidao',  label:'Momento de gratidão' },
+  { id:'guardar',   label:'Guardar dinheiro' },
+  { id:'organizar', label:'Organizar o espaço' }
+];
+const HABITS_MIN = 3;
+const HABITS_MAX = 5;
+let habits = null;
+
+function dayKey(d){
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function todayKey(){ return dayKey(new Date()); }
+function dayDiff(a, b){
+  const utc = s=>{ const p = s.split('-'); return Date.UTC(+p[0], +p[1] - 1, +p[2]); };
+  return Math.round((utc(b) - utc(a)) / 86400000);
+}
+function habitSetKey(){
+  return habits.selected.slice().sort().join('|');
+}
+function loadHabits(){
+  const saved = store.get('habits_v1', null);
+  if(saved && Array.isArray(saved.selected) && saved.days){
+    saved.selected = saved.selected.filter(id => HABIT_PRESETS.some(h=>h.id === id));
+    return saved;
+  }
+  return { selected:['treinar','ler','agua'], days:{} };
+}
+function saveHabits(){ store.set('habits_v1', habits); }
+function isDayComplete(key){
+  const rec = habits.days[key];
+  if(!rec || rec.set !== habitSetKey()) return false;
+  const done = rec.done || [];
+  return habits.selected.length > 0 && habits.selected.every(id=>done.indexOf(id) > -1);
+}
+function doneToday(){
+  const key = todayKey();
+  const rec = habits.days[key];
+  if(!rec || rec.set !== habitSetKey()) return [];
+  return (rec.done || []).filter(id=>habits.selected.indexOf(id) > -1);
+}
+function pruneHabitDays(){
+  const keys = Object.keys(habits.days).sort();
+  while(keys.length > 200) delete habits.days[keys.shift()];
+}
+function computeStreak(){
+  let streak = 0;
+  const cursor = new Date();
+  if(!isDayComplete(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
+  while(isDayComplete(dayKey(cursor))){
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+function computeBestStreak(){
+  const keys = Object.keys(habits.days).sort();
+  let best = 0, run = 0, prev = null;
+  keys.forEach(k=>{
+    if(isDayComplete(k)){
+      run = (prev !== null && dayDiff(prev, k) === 1) ? run + 1 : 1;
+      if(run > best) best = run;
+    }else{
+      run = 0;
+    }
+    prev = k;
+  });
+  return best;
+}
+function toggleHabit(id){
+  const key = todayKey();
+  const done = doneToday();
+  const at = done.indexOf(id);
+  if(at > -1) done.splice(at, 1); else done.push(id);
+  habits.days[key] = { set: habitSetKey(), done: done };
+  saveHabits();
+  renderHabitos();
+}
+function onHabitSelectionChange(){
+  const key = todayKey();
+  const kept = doneToday().filter(id=>habits.selected.indexOf(id) > -1);
+  habits.days[key] = { set: habitSetKey(), done: kept };
+  saveHabits();
+  renderHabitos();
+}
+function toggleHabitSelected(id){
+  const at = habits.selected.indexOf(id);
+  if(at > -1){
+    if(habits.selected.length <= HABITS_MIN){
+      toast('Escolha pelo menos ' + HABITS_MIN + ' hábitos.');
+      return;
+    }
+    habits.selected.splice(at, 1);
+  }else{
+    if(habits.selected.length >= HABITS_MAX){
+      toast('Máximo de ' + HABITS_MAX + ' hábitos. Remova um para trocar.');
+      return;
+    }
+    habits.selected.push(id);
+  }
+  onHabitSelectionChange();
+}
+
+function renderHabitos(){
+  const el = $('tab-habitos');
+  const done = doneToday();
+  const streak = computeStreak();
+  const best = computeBestStreak();
+  const total = habits.selected.length || 1;
+  const pct = Math.round((done.length / total) * 100);
+  const ready = habits.selected.length >= HABITS_MIN;
+
+  let html = '<div class="panel">'
+    + '<h3>Sua sequência</h3>'
+    + '<p class="sub">Um dia conta quando todos os hábitos do dia estão marcados.</p>'
+    + '<div class="streak-row">'
+    +   '<div class="streak-num">' + streak + '</div>'
+    +   '<div class="streak-cap">' + (streak === 1 ? 'dia seguido' : 'dias seguidos') + '<br>recorde: ' + best + '</div>'
+    + '</div>'
+    + '<div class="bar"><i style="width:' + pct + '%"></i></div>'
+    + '<div class="heat-cap">Hoje: ' + done.length + ' de ' + total + ' hábitos (' + pct + '%)</div>'
+    + '<div class="heat">';
+  for(let i = 13; i >= 0; i--){
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const k = dayKey(d);
+    const cls = (isDayComplete(k) ? 'on' : '') + (i === 0 ? ' today' : '');
+    html += '<i class="' + cls + '" title="' + k + '"></i>';
+  }
+  html += '</div><div class="heat-cap">Últimos 14 dias</div></div>';
+
+  html += '<div class="panel"><h3>Checklist de hoje</h3><p class="sub">' + esc(todayKey()) + '</p>';
+  if(!ready){
+    html += '<div class="empty-note">Escolha de ' + HABITS_MIN + ' a ' + HABITS_MAX + ' hábitos abaixo para começar a contar sua sequência.</div>';
+  }else{
+    html += '<div class="habit-list">';
+    habits.selected.forEach(id=>{
+      const habit = HABIT_PRESETS.filter(h=>h.id === id)[0];
+      if(!habit) return;
+      const isDone = done.indexOf(id) > -1;
+      html += '<button class="habit-row' + (isDone ? ' done' : '') + '" data-habit="' + id + '">'
+        + '<span class="tick">&#10003;</span>'
+        + '<span class="h-label">' + esc(habit.label) + '</span>'
+        + '<span class="h-key">' + (isDone ? 'feito' : 'pendente') + '</span>'
+        + '</button>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+
+  html += '<div class="panel"><h3>Seus hábitos</h3>'
+    + '<p class="sub">Marque de ' + HABITS_MIN + ' a ' + HABITS_MAX + ' — ' + habits.selected.length + ' de ' + HABITS_MAX + ' selecionados.</p>'
+    + '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+  HABIT_PRESETS.forEach(h=>{
+    const on = habits.selected.indexOf(h.id) > -1;
+    html += '<button class="mini-btn' + (on ? ' primary' : '') + '" data-pick="' + h.id + '">' + esc(h.label) + '</button>';
+  });
+  html += '</div></div>';
+
+  el.innerHTML = html;
+
+  el.querySelectorAll('[data-habit]').forEach(btn=>{ btn.onclick = ()=>toggleHabit(btn.dataset.habit); });
+  el.querySelectorAll('[data-pick]').forEach(btn=>{ btn.onclick = ()=>toggleHabitSelected(btn.dataset.pick); });
+}
+
+/* ==================================================================
+   NOTIFICAÇÃO DIÁRIA
+   ================================================================== */
+const NOTIF_KEY = 'notify_v1';
+const NOTIF_CHANNEL = 'impulso-diario';
+const NOTIF_BASE_ID = 9000;
+const NOTIF_DAYS = 7;
+
+function loadNotifCfg(){
+  const cfg = store.get(NOTIF_KEY, null);
+  if(cfg && typeof cfg.enabled === 'boolean' && typeof cfg.hour === 'number') return cfg;
+  return { enabled:true, hour:8, minute:0 };
+}
+function saveNotifCfg(cfg){ store.set(NOTIF_KEY, cfg); }
+function notifPlugin(){ return nativePlugin('LocalNotifications'); }
+
+function dailyQuote(){
+  const theme = usageTop('frases') || currentTheme || 'foco';
+  const quotes = (THEMES[theme] && THEMES[theme].quotes) || [];
+  const text = quotes.length ? quotes[Math.floor(Math.random() * quotes.length)] : 'O esforço de hoje é a força de amanhã.';
+  return { theme: theme, text: text };
+}
+function notifHourLabel(cfg){
+  return String(cfg.hour).padStart(2, '0') + ':' + String(cfg.minute).padStart(2, '0');
+}
+
+async function notifStatus(){
+  const LN = notifPlugin();
+  if(!LN || !LN.checkPermissions) return { supported:false, granted:false };
+  try{
+    const res = await LN.checkPermissions();
+    return { supported:true, granted: res && res.display === 'granted' };
+  }catch(e){
+    return { supported:true, granted:false };
+  }
+}
+
+async function cancelScheduled(){
+  const LN = notifPlugin();
+  if(!LN || !LN.getPending) return;
+  try{
+    const pending = await LN.getPending();
+    const mine = ((pending && pending.notifications) || []).filter(n => n.id >= NOTIF_BASE_ID && n.id < NOTIF_BASE_ID + 1000);
+    if(mine.length) await LN.cancel({ notifications: mine.map(n=>({ id: n.id })) });
+  }catch(e){ console.error('[notify] getPending falhou', e); }
+}
+
+async function ensureNotifChannel(){
+  const LN = notifPlugin();
+  if(!LN || !LN.createChannel) return;
+  try{
+    await LN.createChannel({
+      id: NOTIF_CHANNEL,
+      name:'Frase diária',
+      description:'Uma frase motivacional por dia',
+      importance:5,
+      visibility:1,
+      lights:true,
+      lightColor:'#FFD8A14A'
+    });
+  }catch(e){ console.error('[notify] createChannel falhou', e); }
+}
+
+let notifSyncLock = null;
+function syncNotifications(){
+  // initApp e visibilitychange podem disparar juntos; serializa para
+  // que um cancel nao apague o schedule do outro
+  if(notifSyncLock) return notifSyncLock;
+  notifSyncLock = doSyncNotifications().finally(()=>{ notifSyncLock = null; });
+  return notifSyncLock;
+}
+
+async function doSyncNotifications(){
+  const LN = notifPlugin();
+  if(!LN || !LN.schedule) return;
+  await cancelScheduled();
+  const cfg = loadNotifCfg();
+  if(!cfg.enabled) return;
+  const status = await notifStatus();
+  if(!status.granted) return;
+  await ensureNotifChannel();
+
+  // frases distintas para a semana, do tema mais usado
+  const seen = new Set();
+  const week = [];
+  for(let i = 0; i < NOTIF_DAYS; i++){
+    let quote = dailyQuote(), tries = 0;
+    while(seen.has(quote.text) && tries++ < 10) quote = dailyQuote();
+    seen.add(quote.text);
+    week.push(quote);
+  }
+
+  const now = new Date();
+  for(let i = 0; i < NOTIF_DAYS; i++){
+    const when = new Date(now.getFullYear(), now.getMonth(), now.getDate(), cfg.hour, cfg.minute, 0, 0);
+    if(when.getTime() <= now.getTime()) when.setDate(when.getDate() + 1 + i);
+    else when.setDate(when.getDate() + i);
+    const quote = week[i];
+    try{
+      await LN.schedule({
+        notifications:[{
+          id: NOTIF_BASE_ID + i,
+          channelId: NOTIF_CHANNEL,
+          title:'Impulso',
+          body: quote.text,
+          schedule:{ at: when, allowWhileIdle:true },
+          extra:{ theme: quote.theme }
+        }]
+      });
+    }catch(e){ console.error('[notify] schedule falhou', e); }
+  }
+}
+
+async function requestNotifPermission(){
+  const LN = notifPlugin();
+  if(!LN || !LN.requestPermissions){
+    toast('Atualize o app para habilitar a notificação diária.');
+    return false;
+  }
+  try{
+    const res = await LN.requestPermissions();
+    if(res && res.display === 'granted'){
+      await syncNotifications();
+      refreshAjustes();
+      toast('Notificação diária ativada.');
+      return true;
+    }
+  }catch(e){ console.error('[notify] requestPermissions falhou', e); }
+  toast('Permissão de notificação negada.');
+  refreshAjustes();
+  return false;
+}
+
+async function testNotification(){
+  const quote = dailyQuote();
+  const LN = notifPlugin();
+  if(LN && LN.schedule){
+    const status = await notifStatus();
+    if(!status.granted){ toast('Permita as notificações primeiro.'); return; }
+    await ensureNotifChannel();
+    try{
+      await LN.schedule({
+        notifications:[{
+          id: NOTIF_BASE_ID + 99,
+          channelId: NOTIF_CHANNEL,
+          title:'Impulso',
+          body: quote.text,
+          schedule:{ at: new Date(Date.now() + 5000) }
+        }]
+      });
+      toast('Notificação de teste em 5 segundos.');
+    }catch(e){
+      console.error('[notify] teste falhou', e);
+      toast('Não foi possível agendar o teste.');
+    }
+    return;
+  }
+  if('Notification' in window){
+    const perm = await Notification.requestPermission();
+    if(perm !== 'granted'){ toast('Permissão negada.'); return; }
+    const send = ()=>toast('Notificação de teste enviada.');
+    if(navigator.serviceWorker && navigator.serviceWorker.ready){
+      navigator.serviceWorker.ready
+        .then(reg=>reg.showNotification('Impulso', { body: quote.text, icon:'icon-192.png' }))
+        .then(send)
+        .catch(()=>{ new Notification('Impulso', { body: quote.text }); send(); });
+    }else{
+      new Notification('Impulso', { body: quote.text });
+      send();
+    }
+    return;
+  }
+  toast('Notificações não suportadas aqui.');
+}
+
+function renderAjustes(){
+  const cfg = loadNotifCfg();
+
+  $('tab-ajustes').innerHTML =
+    '<div class="panel">'
+    + '<h3>Notificação diária</h3>'
+    + '<p class="sub">Uma frase por manhã, do tema que você mais usa.</p>'
+    + '<div class="row">'
+    +   '<div class="r-main"><div class="r-title">Frase todo dia</div>'
+    +     '<div class="r-sub" id="notifStatus">verificando...</div></div>'
+    +   '<button class="switch" id="notifSwitch" role="switch" aria-checked="' + cfg.enabled + '"></button>'
+    + '</div>'
+    + '<div class="row">'
+    +   '<div class="r-main"><div class="r-title">Horário</div>'
+    +     '<div class="r-sub">Quando a frase chega.</div></div>'
+    +   '<input type="time" class="time-in" id="notifTime" value="' + notifHourLabel(cfg) + '">'
+    + '</div>'
+    + '<div class="row">'
+    +   '<div class="r-main"><div class="r-title">Tema em destaque</div>'
+    +     '<div class="r-sub" id="topTheme">calculando...</div></div>'
+    + '</div>'
+    + '<div class="row">'
+    +   '<button class="mini-btn primary" id="notifAllow">Permitir</button>'
+    +   '<button class="mini-btn" id="notifTest">Testar agora</button>'
+    + '</div>'
+    + '</div>'
+    + '<div class="panel">'
+    + '<h3>Sobre</h3>'
+    + '<p class="sub">Impulso 1.4 — frases, livros, hábitos e um empurrão diário.</p>'
+    + '<div class="row">'
+    +   '<div class="r-main"><div class="r-title">Apagar hábitos</div>'
+    +     '<div class="r-sub">Zera a sequência e o histórico do checklist.</div></div>'
+    +   '<button class="mini-btn" id="habitsClear">Apagar</button>'
+    + '</div>'
+    + '</div>';
+
+  const sw = $('notifSwitch');
+  const paint = ()=>{ sw.classList.toggle('on', cfg.enabled); sw.setAttribute('aria-checked', cfg.enabled); };
+  paint();
+
+  sw.onclick = async ()=>{
+    cfg.enabled = !cfg.enabled;
+    saveNotifCfg(cfg);
+    paint();
+    if(cfg.enabled){
+      const status = await notifStatus();
+      if(!status.granted) await requestNotifPermission();
+      else await syncNotifications();
+    }else{
+      await cancelScheduled();
+      toast('Notificação diária desligada.');
+    }
+    refreshAjustes();
+  };
+
+  $('notifTime').onchange = async (e)=>{
+    const parts = String(e.target.value || '').split(':');
+    if(parts.length < 2) return;
+    cfg.hour = Math.min(23, Math.max(0, parseInt(parts[0], 10) || 0));
+    cfg.minute = Math.min(59, Math.max(0, parseInt(parts[1], 10) || 0));
+    saveNotifCfg(cfg);
+    if(cfg.enabled) await syncNotifications();
+    toast('Notificações às ' + notifHourLabel(cfg) + '.');
+  };
+
+  $('notifAllow').onclick = ()=>requestNotifPermission();
+  $('notifTest').onclick = ()=>testNotification();
+  $('habitsClear').onclick = ()=>{
+    if(!confirm('Apagar toda a sequência de hábitos?')) return;
+    habits.days = {};
+    saveHabits();
+    renderHabitos();
+    toast('Histórico de hábitos apagado.');
+  };
+
+  refreshAjustes();
+}
+
+async function refreshAjustes(){
+  if(activeTab !== 'ajustes' || $('tab-ajustes').hidden) return;
+  const cfg = loadNotifCfg();
+  const status = await notifStatus();
+  const top = usageTop('frases');
+
+  const statusEl = $('notifStatus');
+  const allowEl = $('notifAllow');
+  if(statusEl){
+    let text;
+    if(!status.supported){
+      text = 'Seu app precisa da versão 1.4 para agendar a frase automaticamente.';
+    }else if(!status.granted){
+      text = 'Permissão ainda não concedida. Toque em "Permitir".';
+    }else if(!cfg.enabled){
+      text = 'Desligada. Ligue o botão acima para voltar.';
+    }else{
+      text = 'Ativa todo dia às ' + notifHourLabel(cfg) + ' nas próximas ' + NOTIF_DAYS + ' dias.';
+    }
+    statusEl.textContent = text;
+  }
+  if(allowEl) allowEl.hidden = !status.supported || status.granted;
+  if($('topTheme')){
+    $('topTheme').textContent = top
+      ? themeLabel(top) + ' — é o tema que você mais acessa.'
+      : 'Abra a aba Frases algumas vezes para descobrirmos seu tema favorito.';
+  }
+}
+
+/* ==================================================================
+   EVENTOS GLOBAIS
+   ================================================================== */
+function wireGlobalEvents(){
+  $('bookSheet').onclick = (e)=>{ if(e.target === $('bookSheet')) closeSheet(); };
+
+  $('rClose').onclick = closeReader;
+  $('rPrev').onclick = ()=>{ if(readerState.page > 1){ readerState.page--; renderReaderPage(); } };
+  $('rNext').onclick = ()=>{ if(readerState.doc && readerState.page < readerState.doc.numPages){ readerState.page++; renderReaderPage(); } };
+  $('rZoomIn').onclick = ()=>{ readerState.zoom = Math.min(readerState.zoom + 0.25, 3); renderReaderPage(); };
+  $('rZoomOut').onclick = ()=>{ readerState.zoom = Math.max(readerState.zoom - 0.25, 0.5); renderReaderPage(); };
+
+  $('pPlay').onclick = ()=>{
+    if(!audio.getAttribute('src')) return;
+    if(audio.paused){
+      const p = audio.play();
+      if(p && p.then) p.then(()=>setPlayIcon(true)).catch(()=>setPlayIcon(false));
+      else setPlayIcon(true);
+    }else{
+      audio.pause();
+      setPlayIcon(false);
+    }
+  };
+  $('pClose').onclick = closePlayer;
+  $('pBack').onclick = ()=>{ audio.currentTime = Math.max(0, audio.currentTime - 15); paintSeek(); };
+  $('pFwd').onclick = ()=>{ if(isFinite(audio.duration)) audio.currentTime = Math.min(audio.duration, audio.currentTime + 30); paintSeek(); };
+  $('pSeek').oninput = (e)=>{
+    if(!isFinite(audio.duration)) return;
+    audio.currentTime = (parseInt(e.target.value, 10) / 1000) * audio.duration;
+    paintSeek();
+  };
+  $('pSpeed').onclick = ()=>{
+    const at = SPEEDS.indexOf(playerState.rate);
+    playerState.rate = SPEEDS[(at + 1) % SPEEDS.length];
+    audio.playbackRate = playerState.rate;
+    store.set('audio_rate', playerState.rate);
+    $('pSpeed').textContent = playerState.rate + 'x';
+  };
+
+  audio.addEventListener('timeupdate', ()=>{
+    paintSeek();
+    if(Date.now() - playerState.lastSave > 4000){
+      playerState.lastSave = Date.now();
+      saveAudioPos();
+    }
+  });
+  audio.addEventListener('play', ()=>setPlayIcon(true));
+  audio.addEventListener('pause', ()=>setPlayIcon(false));
+  audio.addEventListener('ended', ()=>{
+    setPlayIcon(false);
+    $('pSeek').value = 0;
+    if(playerState.book) store.set('audio_pos_' + playerState.book.id, 0);
+  });
+  audio.addEventListener('error', ()=>{
+    if(playerState.book) toast('Não foi possível carregar este áudio.');
+  });
+
+  document.addEventListener('keydown', (e)=>{
+    if(e.key !== 'Escape') return;
+    if(!$('reader').hidden) closeReader();
+    else if(!$('bookSheet').hidden) closeSheet();
+  });
+
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.hidden) return;
+    if(habits) pruneHabitDays();
+    syncNotifications().catch(()=>{});
+  });
+}
+
+function initApp(){
+  buildTabbar();
+  wireGlobalEvents();
+  habits = loadHabits();
+  pruneHabitDays();
+  saveHabits();
+  const last = store.get('tab_v1', 'frases');
+  switchTab(TABS.filter(t=>t.key === last).length ? last : 'frases');
+  syncNotifications().catch(()=>{});
+}
+
 buildThemeButtons();
 buildBgThemes();
 buildFontButtons();
@@ -5877,6 +7453,7 @@ if('serviceWorker' in navigator){
 }
 
 window.addEventListener('load', ()=>setTimeout(checkForUpdate, 1500));
+initApp();
 </script>
 </body>
 </html>

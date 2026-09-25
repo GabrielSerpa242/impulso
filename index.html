@@ -5677,14 +5677,14 @@ function nativePlugin(name){
   return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins[name];
 }
 
-function drawAndDownload(){
+async function drawAndDownload(){
   renderPNG(async (dataUrl)=>{
     const Media = nativePlugin('Media');
     if(Media){
       try{
         await Media.savePhoto({
           path: dataUrl,
-          fileName: 'impulso_' + Date.now()
+          fileName: 'impulso_' + Date.now() + '.png'
         });
         alert('Imagem salva na galeria.');
       }catch(e){
@@ -5799,7 +5799,18 @@ function compareVersions(a, b){
 function showUpdateBanner(info){
   const banner = document.getElementById('updateBanner');
   document.getElementById('updateBtn').onclick = ()=>{
-    if(info.apkUrl) window.open(info.apkUrl, '_system');
+    if(!info.apkUrl) return;
+    console.log('[update] Baixar clicado:', info.apkUrl);
+    const Browser = nativePlugin('Browser');
+    if(Browser && Browser.open){
+      Browser.open({ url: info.apkUrl }).catch(e=>{
+        console.error('[update] Browser.open falhou:', e);
+        window.open(info.apkUrl, '_system');
+      });
+      return;
+    }
+    const win = window.open(info.apkUrl, '_system');
+    if(!win) window.location.href = info.apkUrl;
   };
   document.getElementById('updateClose').onclick = ()=>{
     banner.classList.remove('show');

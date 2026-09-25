@@ -5682,9 +5682,29 @@ async function drawAndDownload(){
     const Media = nativePlugin('Media');
     if(Media){
       try{
+        let albumIdentifier = undefined;
+        try{
+          const basePath = (await Media.getAlbumsPath()).path;
+          if(basePath){
+            const byName = (await Media.getAlbums()).albums.find(a=>a.name === 'Impulso' && a.identifier.indexOf(basePath) === 0);
+            if(byName) albumIdentifier = byName.identifier;
+          }
+        }catch(e){ console.error('[save] lookup album:', e); }
+        if(!albumIdentifier){
+          try{ await Media.createAlbum({ name: 'Impulso' }); }catch(e){}
+          try{
+            const basePath = (await Media.getAlbumsPath()).path;
+            if(basePath){
+              const byName = (await Media.getAlbums()).albums.find(a=>a.name === 'Impulso' && a.identifier.indexOf(basePath) === 0);
+              if(byName) albumIdentifier = byName.identifier;
+            }
+          }catch(e){ console.error('[save] album apos create:', e); }
+        }
+        if(!albumIdentifier) throw new Error('Nao foi possivel resolver um album no Android');
         await Media.savePhoto({
           path: dataUrl,
-          fileName: 'impulso_' + Date.now() + '.png'
+          albumIdentifier: albumIdentifier,
+          fileName: 'impulso_' + Date.now()
         });
         alert('Imagem salva na galeria.');
       }catch(e){
@@ -5801,6 +5821,16 @@ function showUpdateBanner(info){
   document.getElementById('updateBtn').onclick = ()=>{
     if(!info.apkUrl) return;
     console.log('[update] Baixar clicado:', info.apkUrl);
+    const AppLauncher = nativePlugin('AppLauncher');
+    if(AppLauncher && AppLauncher.openUrl){
+      AppLauncher.openUrl({ url: info.apkUrl }).then(r=>{
+        console.log('[update] openUrl:', r);
+      }).catch(e=>{
+        console.error('[update] AppLauncher.openUrl falhou:', e);
+        window.open(info.apkUrl, '_system');
+      });
+      return;
+    }
     const Browser = nativePlugin('Browser');
     if(Browser && Browser.open){
       Browser.open({ url: info.apkUrl }).catch(e=>{

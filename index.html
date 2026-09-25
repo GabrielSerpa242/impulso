@@ -5782,7 +5782,7 @@ applyFont();
 applyGeneratedBg();
 newQuote();
 
-const UPDATE_SOURCE = 'versao.json';
+const UPDATE_SOURCE = 'https://gabrielserpa242.github.io/impulso/versao.json';
 
 function compareVersions(a, b){
   const pa = String(a).split('.').map(n=>parseInt(n,10)||0);
@@ -5810,16 +5810,18 @@ function showUpdateBanner(info){
 
 async function checkForUpdate(){
   const Device = nativePlugin('Device');
+  console.log('[update] Device plugin:', Device);
   if(!Device) return;
   let installed = null;
   try{
     installed = (await Device.getInfo()).appVersion;
-  }catch(e){ return; }
+  }catch(e){ console.error('[update] Device.getInfo falhou:', e); return; }
 
   let info;
   try{
     info = await (await fetch(UPDATE_SOURCE + '?v=' + Date.now())).json();
-  }catch(e){ return; }
+    console.log('[update] versao.json:', info);
+  }catch(e){ console.error('[update] fetch versao.json falhou:', e); return; }
   if(!info || !info.apkVersion) return;
 
   if(installed === info.apkVersion) return;

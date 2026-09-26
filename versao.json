@@ -1,5 +1,5 @@
 {
-  "apkVersion": "1.5",
+  "apkVersion": "1.6",
   "apkUrl": "https://gabrielserpa242.github.io/impulso/apk/impulso.apk",
-  "message": "Aba Livros com os 3 livros Wild Cards e leitor de PDF."
+  "message": "Corrige a abertura dos livros e habilita cookies para o leitor de PDF."
 }

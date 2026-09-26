@@ -517,6 +517,7 @@
     overflow:hidden;
     text-overflow:ellipsis;
   }
+  .reader-bar .r-ext{ font-size:17px; }
   .icon-btn{
     background:transparent;
     border:1px solid var(--line);
@@ -873,6 +874,7 @@
   <div class="reader-bar">
     <button class="icon-btn" id="rClose" aria-label="Fechar">&times;</button>
     <div class="r-title"><span id="rTitle">&nbsp;</span></div>
+    <button class="icon-btn r-ext" id="rExt" aria-label="Abrir no navegador" title="Abrir no navegador">&#8599;</button>
   </div>
   <div class="reader-pages" id="rPages"></div>
 </div>
@@ -6604,7 +6606,10 @@ function renderLivros(){
 }
 
 function findBook(id){
-  return BOOKS.filter(b=>b.id === id)[0] || null;
+  // o clique no card entrega o data-book, que e sempre string.
+  // comparar com === direto nunca casaria com os ids numericos do acervo.
+  const alvo = String(id);
+  return BOOKS.filter(b=>String(b.id) === alvo)[0] || null;
 }
 
 function openBookSheet(id){
@@ -6666,6 +6671,7 @@ function closeSheet(){
    ================================================================== */
 function openReader(livro){
   $('rTitle').textContent = livro.titulo;
+  readerOpen = livro.pdfUrl || null;
   if(livro.pdfUrl){
     $('rPages').innerHTML =
       '<iframe class="reader-frame" title="' + esc(livro.titulo) + '"'
@@ -6682,7 +6688,26 @@ function openReader(livro){
 function closeReader(){
   // limpar o container derruba o iframe e interrompe o carregamento do Drive
   $('rPages').innerHTML = '';
+  readerOpen = null;
   $('reader').hidden = true;
+}
+
+// Rede de seguranca: se o visualizador do Drive nao renderizar dentro do
+// WebView, o leitor ainda entrega o PDF no navegador do sistema.
+let readerOpen = null;
+
+function abrirLivroExterno(url){
+  if(!url) return;
+  const Browser = nativePlugin('Browser');
+  if(Browser && Browser.open){
+    Browser.open({ url: url }).catch(e=>{
+      console.error('[reader] Browser.open falhou:', e);
+      window.open(url, '_system');
+    });
+    return;
+  }
+  const win = window.open(url, '_system');
+  if(!win) window.location.href = url;
 }
 
 /* ==================================================================
@@ -7232,6 +7257,7 @@ function wireGlobalEvents(){
   $('bookSheet').onclick = (e)=>{ if(e.target === $('bookSheet')) closeSheet(); };
 
   $('rClose').onclick = closeReader;
+  $('rExt').onclick = ()=>abrirLivroExterno(readerOpen);
 
   $('pPlay').onclick = ()=>{
     if(!audio.getAttribute('src')) return;

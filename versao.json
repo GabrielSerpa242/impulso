@@ -1,5 +1,5 @@
 {
-  "apkVersion": "1.7",
+  "apkVersion": "1.8",
   "apkUrl": "https://gabrielserpa242.github.io/impulso/apk/impulso.apk",
-  "message": "Cards de Livros com capa real e sem texto duplicado."
+  "message": "Corrige o enquadramento da capa dos livros (sem faixa vazia)."
 }

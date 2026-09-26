@@ -384,16 +384,28 @@
     -webkit-tap-highlight-color:transparent;
   }
   .book-card:active{ transform:scale(.985); }
-  .book-cover{ display:block; width:100%; aspect-ratio:2/3; background:#0b0a08; }
+  /* A capa e um quadro fixo 2:3 com overflow hidden. A <img> e posicionada
+     em vez de usar height:100%: assim ela preenche a area exata do quadro
+     sem depender de altura percentual (que falha dentro de <button> e de
+     flex no WebView do Android e deixa uma faixa vazia embaixo). */
+  .book-cover{
+    display:block;
+    position:relative;
+    width:100%;
+    aspect-ratio:2/3;
+    overflow:hidden;
+    background:var(--panel);
+  }
   .book-cover svg{ display:block; width:100%; height:100%; }
-  /* capa real do Drive: preenche o mesmo quadro que o SVG preenchia */
   .book-cover img.cover-img{
+    position:absolute;
+    inset:0;
     display:block;
     width:100%;
     height:100%;
     object-fit:cover;
     object-position:center top;
-    background:#0b0a08;
+    background:var(--panel);
   }
   .book-info{ padding:9px 10px 11px; display:block; }
   .book-card .book-title{
@@ -466,19 +478,27 @@
   }
   .sheet-head{ display:flex; gap:14px; align-items:flex-start; }
   .sheet-cover{
+    position:relative;
     width:104px; flex:0 0 104px;
+    aspect-ratio:2/3;
+    align-self:flex-start;
     border-radius:8px; overflow:hidden;
     border:1px solid var(--line);
     box-shadow:0 8px 22px rgba(0,0,0,.45);
+    background:var(--panel);
   }
   .sheet-cover svg{ display:block; width:100%; height:100%; }
+  /* mesmo tratamento do card: <img> absoluta preenchendo o quadro, para a
+     miniatura nao sobrar faixa vazia na parte inferior. */
   .sheet-cover img.cover-img{
+    position:absolute;
+    inset:0;
     display:block;
     width:100%;
     height:100%;
     object-fit:cover;
     object-position:center top;
-    background:#0b0a08;
+    background:var(--panel);
   }
   .sheet h2{
     font-family:'Fraunces',serif;

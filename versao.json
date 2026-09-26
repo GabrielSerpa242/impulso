@@ -1,5 +1,5 @@
 {
-  "apkVersion": "1.8",
+  "apkVersion": "1.9",
   "apkUrl": "https://gabrielserpa242.github.io/impulso/apk/impulso.apk",
-  "message": "Corrige o enquadramento da capa dos livros (sem faixa vazia)."
+  "message": "Corrige a acentuacao (encoding UTF-8) e a folga inferior do menu."
 }

@@ -1,4 +1,4 @@
-const CACHE = 'impulso-1.8';
+const CACHE = 'impulso-1.9';
 
 const PRECACHE = [
   './',
@@ -7,6 +7,15 @@ const PRECACHE = [
   './icon-192.png',
   './icon-512.png'
 ];
+
+// O app e um shell de arquivo unico: index.html carrega CSS e JS embutidos.
+// Servir esse arquivo do cache mantem o usuario preso numa versao antiga
+// (foi assim que o mojibake da 1.5-1.8 sobreviveu a varias releases).
+// Entao o proprio HTML sempre vai a rede primeiro e so usa o cache sem rede.
+function isAppShell(req, url){
+  return req.mode === 'navigate'
+    || url.origin === self.location.origin && (url.pathname === '/index.html' || url.pathname.endsWith('/'));
+}
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -19,10 +28,6 @@ self.addEventListener('activate', event => {
     caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())
   );
 });
-
-function isNavigational(req){
-  return req.mode === 'navigate';
-}
 
 function isFont(req){
   return req.url.startsWith('https://fonts.googleapis.com') || req.url.startsWith('https://fonts.gstatic.com');
@@ -40,12 +45,14 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  if(isNavigational(req)){
+  if(isAppShell(req, url)){
     event.respondWith(
       fetch(req)
         .then(res => {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put('./index.html', copy));
+          if(res && res.ok){
+            const copy = res.clone();
+            caches.open(CACHE).then(c => c.put('./index.html', copy));
+          }
           return res;
         })
         .catch(() => caches.match('./index.html'))

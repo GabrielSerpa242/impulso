@@ -386,18 +386,43 @@
   .book-card:active{ transform:scale(.985); }
   .book-cover{ display:block; width:100%; aspect-ratio:2/3; background:#0b0a08; }
   .book-cover svg{ display:block; width:100%; height:100%; }
-  .book-info{ padding:9px 10px 11px; }
+  /* capa real do Drive: preenche o mesmo quadro que o SVG preenchia */
+  .book-cover img.cover-img{
+    display:block;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:center top;
+    background:#0b0a08;
+  }
+  .book-info{ padding:9px 10px 11px; display:block; }
   .book-card .book-title{
     font-family:'Fraunces',serif;
     font-weight:500;
     font-size:14px;
     line-height:1.25;
     color:var(--ink);
+    overflow:hidden;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
   }
   .book-card .book-author{
+    display:block;
     font-size:11.5px;
     color:var(--ink-dim);
     margin-top:3px;
+  }
+  .book-card .book-tag{
+    display:inline-block;
+    margin-top:7px;
+    padding:2px 8px;
+    border:1px solid var(--line);
+    border-radius:999px;
+    font-size:9.5px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
   }
   .empty-note{
     border:1px dashed var(--line);
@@ -447,6 +472,14 @@
     box-shadow:0 8px 22px rgba(0,0,0,.45);
   }
   .sheet-cover svg{ display:block; width:100%; height:100%; }
+  .sheet-cover img.cover-img{
+    display:block;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:center top;
+    background:#0b0a08;
+  }
   .sheet h2{
     font-family:'Fraunces',serif;
     font-weight:500;
@@ -6536,20 +6569,39 @@ function temaDoLivro(livro){
   return CATEGORIA_TEMA[String(livro && livro.categoria || '').toLowerCase()] || 'foco';
 }
 
+// O Drive gera a miniatura da primeira pagina de um PDF publico sozinho.
+// O id ja esta no pdfUrl, entao nao ha nada novo para cadastrar no acervo.
+function extrairIdDrive(pdfUrl){
+  const match = /\/d\/([^/?#]+)/.exec(pdfUrl || '');
+  return match ? match[1] : null;
+}
+
+function capaUrl(livro){
+  const id = extrairIdDrive(livro && livro.pdfUrl);
+  return id ? 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=w400' : null;
+}
+
+// Fallback quando o Drive nao devolve miniatura (PDF sem pagina renderizavel,
+// link sem permissao, etc). Troca a <img> pelo desenho procedural.
+function capaFallback(img){
+  img.onerror = null;
+  const livro = findBook(img.getAttribute('data-book'));
+  if(livro) img.outerHTML = coverSvg(livro, 'fb');
+}
+
+function coverImg(livro, scope){
+  const src = capaUrl(livro);
+  if(!src) return coverSvg(livro, scope);
+  return '<img class="cover-img" src="' + esc(src) + '" alt="' + esc(livro.titulo) + '"'
+    + ' data-book="' + esc(livro.id) + '" onerror="capaFallback(this)">';
+}
+
+// Sem texto de proposito: este desenho e so o plano B da capa, e o titulo,
+// o autor e a tag ja aparecem no bloco de texto do card. Desenhar aqui
+// duplicaria as duas informacoes na tela.
 function coverSvg(book, scope){
   const colors = BOOK_COLORS[temaDoLivro(book)] || ['#d8a14a','#2a1c08'];
   const gid = 'cg' + book.id + scope;
-  const words = book.titulo.split(' ');
-  const lines = [];
-  let line = '';
-  words.forEach(w=>{
-    const next = line ? line + ' ' + w : w;
-    if(next.length > 13 && line){ lines.push(line); line = w; }
-    else { line = next; }
-  });
-  if(line) lines.push(line);
-  const shown = lines.slice(0, 4);
-  const firstY = 296 - (shown.length - 1) * 16;
 
   return '<svg viewBox="0 0 300 450" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + esc(book.titulo) + '">'
     + '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2=".4" y2="1">'
@@ -6559,11 +6611,10 @@ function coverSvg(book, scope){
     + '<g fill="none" stroke="#ffffff" stroke-opacity=".15" stroke-width="1.3">'
     + '<circle cx="256" cy="66" r="52"/><circle cx="256" cy="66" r="33"/>'
     + '<path d="M0 384h300M0 402h300"/></g>'
-    + '<g fill="#ffffff">'
-    + shown.map((l,i)=>'<text x="26" y="' + (firstY + i * 32) + '" font-family="Fraunces, Georgia, serif" font-size="26" font-weight="500">' + esc(l) + '</text>').join('')
-    + '<text x="26" y="338" font-family="Inter, sans-serif" font-size="15" fill-opacity=".8">' + esc(book.autor) + '</text>'
-    + '<text x="26" y="426" font-family="Inter, sans-serif" font-size="9.5" letter-spacing="2.2" fill-opacity=".55">' + esc(themeLabel(temaDoLivro(book)).toUpperCase()) + ' Â· IMPULSO</text>'
-    + '</g></svg>';
+    + '<g fill="none" stroke="#ffffff" stroke-opacity=".6" stroke-width="5" stroke-linejoin="round">'
+    + '<rect x="112" y="140" width="76" height="170" rx="7"/>'
+    + '<path d="M131 140v170"/></g>'
+    + '</svg>';
 }
 
 function renderLivros(){
@@ -6586,11 +6637,14 @@ function renderLivros(){
   }else{
     html += '<div class="books-grid">';
     list.forEach(b=>{
+      // titulo, autor e tema aparecem uma unica vez cada, no bloco de texto.
+      // a capa e so imagem: texto sobre a arte real ficaria ilegivel.
       html += '<button class="book-card" data-book="' + b.id + '">'
-        + '<span class="book-cover">' + coverSvg(b, 'g') + '</span>'
+        + '<span class="book-cover">' + coverImg(b, 'g') + '</span>'
         + '<span class="book-info">'
         + '<span class="book-title">' + esc(b.titulo) + '</span>'
         + '<span class="book-author">' + esc(b.autor) + '</span>'
+        + '<span class="book-tag">' + esc(themeLabel(temaDoLivro(b))) + '</span>'
         + '</span></button>';
     });
     html += '</div>';
@@ -6626,7 +6680,7 @@ function openBookSheet(id){
   $('sheetBody').innerHTML =
     '<div class="sheet-grip"></div>'
     + '<div class="sheet-head">'
-    +   '<div class="sheet-cover">' + coverSvg(book, 's') + '</div>'
+    +   '<div class="sheet-cover">' + coverImg(book, 's') + '</div>'
     +   '<div>'
     +     '<h2>' + esc(book.titulo) + '</h2>'
     +     '<div class="byline">' + esc(book.autor) + '</div>'

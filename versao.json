@@ -1,5 +1,5 @@
 {
-  "apkVersion": "1.6",
+  "apkVersion": "1.7",
   "apkUrl": "https://gabrielserpa242.github.io/impulso/apk/impulso.apk",
-  "message": "Corrige a abertura dos livros e habilita cookies para o leitor de PDF."
+  "message": "Cards de Livros com capa real e sem texto duplicado."
 }

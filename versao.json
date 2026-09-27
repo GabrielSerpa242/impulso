@@ -1,5 +1,5 @@
 {
-  "apkVersion": "1.11",
+  "apkVersion": "1.12",
   "apkUrl": "https://gabrielserpa242.github.io/impulso/apk/impulso.apk",
-  "message": "Aba de Notificacoes: frase do dia com historico e avisos do app."
+  "message": "Tela de Notificacoes atras do sino, sem aba nova no menu."
 }

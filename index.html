@@ -917,6 +917,28 @@
   }
   .mini-btn:disabled{ opacity:.4; cursor:default; }
 
+  /* Voltar das telas fora do menu (Notificacoes) */
+  .voltar-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    min-height:44px;
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+    border-radius:999px;
+    padding:0 16px 0 13px;
+    font-size:13.5px;
+    font-weight:500;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+    margin-bottom:16px;
+  }
+  .voltar-btn svg{ width:16px; height:16px; flex:none; }
+  .voltar-btn:active{ background:var(--panel); }
+  .voltar-btn:focus-visible{ outline:2px solid var(--amber); outline-offset:2px; }
+
   #toast{
     position:fixed;
     left:50%;
@@ -1009,7 +1031,15 @@
   <section class="tab" id="tab-livros" hidden></section>
   <section class="tab" id="tab-habitos" hidden></section>
   <section class="tab" id="tab-ajustes" hidden></section>
-  <section class="tab" id="tab-notificacoes" hidden></section>
+  <section class="tab" id="tab-notificacoes" hidden>
+  <button class="voltar-btn" id="notifVoltar" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M14.5 5.5 8 12l6.5 6.5"/>
+    </svg>
+    <span>Voltar</span>
+  </button>
+  <div id="notifConteudo"></div>
+</section>
 
 </main>
 
@@ -6559,7 +6589,7 @@ function themeLabel(key){
    Junta duas coisas que antes ficavam soltas: a frase de cada dia
    (guardada em historico) e os avisos do app (versao nova, permissao).
    ================================================================== */
-const APP_VERSION = '1.11';
+const APP_VERSION = '1.12';
 const FRASES_DIA_KEY = 'frases_dia_v1';
 const FRASES_DIA_MAX = 60;
 const AVISOS_VISTOS_KEY = 'avisos_vistos_v1';
@@ -6773,8 +6803,8 @@ function htmlAviso(a){
 }
 
 async function renderNotificacoes(){
-  const sec = $('tab-notificacoes');
-  if(!sec) return;
+  const cx = $('notifConteudo');
+  if(!cx) return;
 
   const hoje = dataLocalISO();
   const frase = frasesDoDia();
@@ -6796,7 +6826,7 @@ async function renderNotificacoes(){
       ? 'Falta a permissão do sistema'
       : (cfg.enabled ? 'Ativa, todo dia às ' + notifHourLabel(cfg) : 'Desligada'));
 
-  sec.innerHTML =
+  cx.innerHTML =
       '<p class="tab-intro">A frase que você recebeu (ou receberia) hoje, e o que o app tem a dizer.</p>'
     + (avisos.length
         ? '<div class="section-label">Avisos</div><div class="panel" id="avisosPanel">' + avisos.map(htmlAviso).join('') + '</div>'
@@ -6819,7 +6849,7 @@ async function renderNotificacoes(){
     + '</div>'
     + '<footer>' + (hist.length + 1) + ' ' + (hist.length ? 'dias guardados' : 'dia guardado') + '.</footer>';
 
-  sec.querySelectorAll('[data-aviso]').forEach(btn=>{
+  cx.querySelectorAll('[data-aviso]').forEach(btn=>{
     const alvo = avisos.filter(a => a.id === btn.getAttribute('data-aviso'))[0];
     if(!alvo) return;
     btn.onclick = ()=>{
@@ -6858,16 +6888,20 @@ const TABS = [
     icon:'<circle cx="12" cy="12" r="3.2"/><path d="M12 3.2v2.4M12 18.4v2.4M3.2 12h2.4M18.4 12h2.4M5.8 5.8l1.7 1.7M16.5 16.5l1.7 1.7M18.2 5.8l-1.7 1.7M7.5 16.5l-1.7 1.7"/>' },
   { key:'notificacoes', label:'Avisos', h1:'Notificações',
     desc:'A frase de cada dia e os avisos do app.',
+    noTab:true,
     icon:'<path d="M18.2 16.4v-5.8a6.2 6.2 0 1 0-12.4 0v5.8L4 18.6h16z"/><path d="M9.9 21.2a2.3 2.3 0 0 0 4.2 0"/>' }
 ];
 
 let activeTab = 'frases';
+let lastMenuTab = 'frases';
 const tabReady = {};
 
 function buildTabbar(){
   const bar = $('tabbar');
   bar.innerHTML = '';
-  TABS.forEach(t=>{
+  // telas com noTab (Notificacoes) existem, mas nao ganham botao no menu:
+  // o sino no topo e a unica porta de entrada delas.
+  TABS.filter(t=>!t.noTab).forEach(t=>{
     const btn = document.createElement('button');
     btn.className = 'tab-btn';
     btn.dataset.tab = t.key;
@@ -6881,6 +6915,8 @@ function buildTabbar(){
 function switchTab(key){
   const tab = TABS.filter(t=>t.key === key)[0] || TABS[0];
   activeTab = tab.key;
+  // guarda a ultima aba do menu para o "Voltar" das telas fora do menu
+  if(!tab.noTab) lastMenuTab = tab.key;
 
   document.querySelectorAll('.tab').forEach(sec=>{ sec.hidden = (sec.id !== 'tab-' + tab.key); });
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab === tab.key));
@@ -6903,7 +6939,8 @@ function switchTab(key){
   paintNotifBell();
 
   window.scrollTo(0, 0);
-  store.set('tab_v1', tab.key);
+  // telas fora do menu nao viram "ultima aba": o app sempre reabre no menu
+  if(!tab.noTab) store.set('tab_v1', tab.key);
 }
 
 /* ==================================================================
@@ -7843,6 +7880,8 @@ function wireGlobalEvents(){
 function initApp(){
   buildTabbar();
   wireGlobalEvents();
+  // tela fora do menu: o "Voltar" devolve para a ultima aba do menu
+  $('notifVoltar').onclick = ()=>switchTab(lastMenuTab || 'frases');
   habits = loadHabits();
   pruneHabitDays();
   saveHabits();
@@ -7851,8 +7890,11 @@ function initApp(){
   iniciarLivros();
   // a frase do dia e registrada sempre, mesmo que o usuario nao abra a aba
   frasesDoDia();
+  // Notificacoes nunca e restaurada: e uma tela do sino, nao um destino de inicializacao
   const last = store.get('tab_v1', 'frases');
-  switchTab(TABS.filter(t=>t.key === last).length ? last : 'frases');
+  const inicial = (TABS.filter(t=>t.key === last && !t.noTab).length) ? last : 'frases';
+  switchTab(inicial);
+  store.set('tab_v1', inicial);
   syncNotifications().catch(()=>{});
   paintNotifBell();
 }

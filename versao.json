@@ -1,5 +1,5 @@
 {
-  "apkVersion": "1.9",
+  "apkVersion": "1.10",
   "apkUrl": "https://gabrielserpa242.github.io/impulso/apk/impulso.apk",
-  "message": "Corrige a acentuacao (encoding UTF-8) e a folga inferior do menu."
+  "message": "Sino de notificacao no topo direito do app."
 }

@@ -308,6 +308,13 @@
     max-width:460px;
     margin:0 auto;
     padding:11px 20px 12px;
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+  }
+  .app-header .hdr-text{
+    flex:1;
+    min-width:0;
   }
   .app-header .eyebrow{
     font-size:10.5px;
@@ -323,6 +330,51 @@
     .app-header h1{ font-size:24px; }
     .app-header p{ display:block; font-size:13px; margin-top:3px; }
   }
+
+  /* Sino de notificacao, no canto superior direito do header fixo. */
+  .hdr-bell{
+    flex:none;
+    position:relative;
+    width:40px;
+    height:40px;
+    margin-top:1px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(29,26,21,.9);
+    border:1px solid var(--line);
+    border-radius:50%;
+    color:var(--ink-dim);
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    transition:color .15s, border-color .15s, background .15s;
+  }
+  .hdr-bell svg{ width:20px; height:20px; display:block; }
+  .hdr-bell:active{ transform:scale(.94); }
+  .hdr-bell[data-state="on"]{
+    color:var(--amber);
+    border-color:var(--amber-dim);
+    background:rgba(216,161,74,.1);
+  }
+  /* ligado, mas sem permissao no sistema: precisa de acao do usuario */
+  .hdr-bell[data-state="pending"]{
+    color:var(--amber);
+    border-color:var(--amber);
+  }
+  .hdr-bell-dot{
+    position:absolute;
+    top:6px;
+    right:6px;
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:var(--amber);
+    border:2px solid #15130f;
+  }
+  .hdr-bell-dot[hidden]{ display:none; }
+
+  /* alvo do scroll quando o sino abre Ajustes: nao pode ficar sob o header fixo */
+  #notifPanel{ scroll-margin-top:calc(var(--header-h) + 14px); }
 
   main.wrap{
     padding-top:calc(var(--header-h) + 26px);
@@ -867,9 +919,18 @@
 <body>
 <header class="app-header">
   <div class="hdr">
-    <div class="eyebrow">Impulso</div>
-    <h1 id="hdrTitle">Uma frase para hoje</h1>
-    <p id="hdrDesc">Escolha um tema, gere sua frase e baixe pronta para o story.</p>
+    <div class="hdr-text">
+      <div class="eyebrow">Impulso</div>
+      <h1 id="hdrTitle">Uma frase para hoje</h1>
+      <p id="hdrDesc">Escolha um tema, gere sua frase e baixe pronta para o story.</p>
+    </div>
+    <button class="hdr-bell" id="hdrBell" type="button" data-state="off" aria-label="Notificações">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M18.2 16.4v-5.8a6.2 6.2 0 1 0-12.4 0v5.8L4 18.6h16z"/>
+        <path d="M9.9 21.2a2.3 2.3 0 0 0 4.2 0"/>
+      </svg>
+      <span class="hdr-bell-dot" id="hdrBellDot" hidden></span>
+    </button>
   </div>
 </header>
 
@@ -6517,6 +6578,7 @@ function switchTab(key){
   }else if(tab.key === 'ajustes'){
     refreshAjustes();
   }
+  paintNotifBell();
 
   window.scrollTo(0, 0);
   store.set('tab_v1', tab.key);
@@ -7082,6 +7144,36 @@ async function notifStatus(){
   }
 }
 
+/* Sino do header: mostra o estado real da notificacao diaria e leva
+   para o painel de configuracao quando tocado. */
+async function paintNotifBell(){
+  const bell = $('hdrBell');
+  const dot = $('hdrBellDot');
+  if(!bell) return;
+  const cfg = loadNotifCfg();
+  const status = await notifStatus();
+
+  let state, rotulo;
+  if(!status.supported){
+    state = 'off';
+    rotulo = 'Notificações: atualize o app para habilitar';
+  }else if(cfg.enabled && !status.granted){
+    state = 'pending';
+    rotulo = 'Notificações: falta permissão. Toque para permitir';
+  }else if(cfg.enabled && status.granted){
+    state = 'on';
+    rotulo = 'Notificações ativas todo dia às ' + notifHourLabel(cfg);
+  }else{
+    state = 'off';
+    rotulo = 'Notificações desligadas. Toque para ligar';
+  }
+
+  bell.dataset.state = state;
+  bell.setAttribute('aria-label', rotulo);
+  bell.title = rotulo;
+  if(dot) dot.hidden = state !== 'pending';
+}
+
 async function cancelScheduled(){
   const LN = notifPlugin();
   if(!LN || !LN.getPending) return;
@@ -7224,7 +7316,7 @@ function renderAjustes(){
   const cfg = loadNotifCfg();
 
   $('tab-ajustes').innerHTML =
-    '<div class="panel">'
+    '<div class="panel" id="notifPanel">'
     + '<h3>Notificação diária</h3>'
     + '<p class="sub">Uma frase por manhã, do tema que você mais usa.</p>'
     + '<div class="row">'
@@ -7272,6 +7364,7 @@ function renderAjustes(){
       await cancelScheduled();
       toast('Notificação diária desligada.');
     }
+    paintNotifBell();
     refreshAjustes();
   };
 
@@ -7282,10 +7375,15 @@ function renderAjustes(){
     cfg.minute = Math.min(59, Math.max(0, parseInt(parts[1], 10) || 0));
     saveNotifCfg(cfg);
     if(cfg.enabled) await syncNotifications();
+    paintNotifBell();
     toast('Notificações às ' + notifHourLabel(cfg) + '.');
   };
 
-  $('notifAllow').onclick = ()=>requestNotifPermission();
+  $('notifAllow').onclick = async ()=>{
+    await requestNotifPermission();
+    paintNotifBell();
+    refreshAjustes();
+  };
   $('notifTest').onclick = ()=>testNotification();
   $('habitsClear').onclick = ()=>{
     if(!confirm('Apagar toda a sequência de hábitos?')) return;
@@ -7332,6 +7430,12 @@ async function refreshAjustes(){
    ================================================================== */
 function wireGlobalEvents(){
   $('bookSheet').onclick = (e)=>{ if(e.target === $('bookSheet')) closeSheet(); };
+
+  $('hdrBell').onclick = ()=>{
+    switchTab('ajustes');
+    const painel = $('notifPanel');
+    if(painel) painel.scrollIntoView({ behavior:'smooth', block:'start' });
+  };
 
   $('rClose').onclick = closeReader;
   $('rExt').onclick = ()=>abrirLivroExterno(readerOpen);
@@ -7390,6 +7494,8 @@ function wireGlobalEvents(){
   document.addEventListener('visibilitychange', ()=>{
     if(document.hidden) return;
     if(habits) pruneHabitDays();
+    // a permissao pode ter sido concedida/cancelada nas configuracoes do sistema
+    paintNotifBell();
     syncNotifications().catch(()=>{});
   });
 }
@@ -7406,6 +7512,7 @@ function initApp(){
   const last = store.get('tab_v1', 'frases');
   switchTab(TABS.filter(t=>t.key === last).length ? last : 'frases');
   syncNotifications().catch(()=>{});
+  paintNotifBell();
 }
 
 buildThemeButtons();

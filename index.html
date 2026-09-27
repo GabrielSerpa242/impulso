@@ -6589,7 +6589,7 @@ function themeLabel(key){
    Junta duas coisas que antes ficavam soltas: a frase de cada dia
    (guardada em historico) e os avisos do app (versao nova, permissao).
    ================================================================== */
-const APP_VERSION = '1.12';
+const APP_VERSION = '1.13';
 const FRASES_DIA_KEY = 'frases_dia_v1';
 const FRASES_DIA_MAX = 60;
 const AVISOS_VISTOS_KEY = 'avisos_vistos_v1';
@@ -6892,10 +6892,11 @@ const TABS = [
     icon:'<path d="M18.2 16.4v-5.8a6.2 6.2 0 1 0-12.4 0v5.8L4 18.6h16z"/><path d="M9.9 21.2a2.3 2.3 0 0 0 4.2 0"/>' }
 ];
 
+// aba em que o app abre; tambem e para onde o "voltar" colapsa o menu
+const TAB_INICIAL = 'frases';
 let activeTab = 'frases';
 let lastMenuTab = 'frases';
 const tabReady = {};
-
 function buildTabbar(){
   const bar = $('tabbar');
   bar.innerHTML = '';
@@ -6941,6 +6942,38 @@ function switchTab(key){
   window.scrollTo(0, 0);
   // telas fora do menu nao viram "ultima aba": o app sempre reabre no menu
   if(!tab.noTab) store.set('tab_v1', tab.key);
+}
+
+/* ==================================================================
+   VOLTAR — um unico lugar decide o que o "voltar" desfaz.
+   Serve tanto para a tecla Escape quanto para o botao fisico do
+   Android. Devolve true quando algo foi fechado, para o chamador
+   saber que o evento foi consumido e o app nao deve sair.
+   ================================================================== */
+
+function voltar(){
+  // o que esta por cima fecha primeiro
+  if(!$('reader').hidden){ closeReader(); return true; }
+  if(!$('player').hidden){ closePlayer(); return true; }
+  if(!$('bookSheet').hidden){ closeSheet(); return true; }
+  // tela do sino: devolve para a aba de onde o usuario veio
+  if(activeTab === 'notificacoes'){ switchTab(lastMenuTab || TAB_INICIAL); return true; }
+  // abas do menu: voltam para a aba inicial em vez de passear no historico,
+  // senao o botao "voltar" ficaria preso entre abas sem nunca sair
+  if(activeTab !== TAB_INICIAL){ switchTab(TAB_INICIAL); return true; }
+  return false;
+}
+
+// No Android o botao fisico de voltar chega aqui. Registrar o listener
+// desliga a saida automatica do app, entao a saida final precisa ser
+// pedida de forma explicita quando nao ha mais nada para fechar.
+function wireBackAndroid(){
+  const App = nativePlugin('App');
+  if(!App || !App.addListener) return;
+  App.addListener('backButton', ()=>{
+    if(voltar()) return;
+    if(App.exitApp) App.exitApp();
+  });
 }
 
 /* ==================================================================
@@ -7860,8 +7893,7 @@ function wireGlobalEvents(){
 
   document.addEventListener('keydown', (e)=>{
     if(e.key !== 'Escape') return;
-    if(!$('reader').hidden) closeReader();
-    else if(!$('bookSheet').hidden) closeSheet();
+    voltar();
   });
 
   document.addEventListener('visibilitychange', ()=>{
@@ -7880,8 +7912,9 @@ function wireGlobalEvents(){
 function initApp(){
   buildTabbar();
   wireGlobalEvents();
+  wireBackAndroid();
   // tela fora do menu: o "Voltar" devolve para a ultima aba do menu
-  $('notifVoltar').onclick = ()=>switchTab(lastMenuTab || 'frases');
+  $('notifVoltar').onclick = ()=>switchTab(lastMenuTab || TAB_INICIAL);
   habits = loadHabits();
   pruneHabitDays();
   saveHabits();
@@ -7891,8 +7924,8 @@ function initApp(){
   // a frase do dia e registrada sempre, mesmo que o usuario nao abra a aba
   frasesDoDia();
   // Notificacoes nunca e restaurada: e uma tela do sino, nao um destino de inicializacao
-  const last = store.get('tab_v1', 'frases');
-  const inicial = (TABS.filter(t=>t.key === last && !t.noTab).length) ? last : 'frases';
+  const last = store.get('tab_v1', TAB_INICIAL);
+  const inicial = (TABS.filter(t=>t.key === last && !t.noTab).length) ? last : TAB_INICIAL;
   switchTab(inicial);
   store.set('tab_v1', inicial);
   syncNotifications().catch(()=>{});

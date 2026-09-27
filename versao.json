@@ -1,5 +1,5 @@
 {
-  "apkVersion": "1.12",
+  "apkVersion": "1.13",
   "apkUrl": "https://gabrielserpa242.github.io/impulso/apk/impulso.apk",
-  "message": "Tela de Notificacoes atras do sino, sem aba nova no menu."
+  "message": "Botão de voltar do Android funciona em todas as telas, e a Notificações fica atrás do sino."
 }

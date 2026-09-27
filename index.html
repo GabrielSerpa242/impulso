@@ -376,6 +376,37 @@
   /* alvo do scroll quando o sino abre Ajustes: nao pode ficar sob o header fixo */
   #notifPanel{ scroll-margin-top:calc(var(--header-h) + 14px); }
 
+  /* ============ ABA DE NOTIFICAÇÕES ============
+     Os avisos reaproveitam .row/.r-main/.r-title/.r-sub de Ajustes;
+     aqui so entra a marcacao de gravidade. */
+  .aviso-update{ box-shadow:inset 2px 0 0 var(--amber); padding-left:12px; }
+  .aviso-aviso{ box-shadow:inset 2px 0 0 var(--amber-dim); padding-left:12px; }
+
+  .frase-dia{ padding:12px 0; border-bottom:1px solid var(--line); }
+  .frase-dia:first-child{ padding-top:0; }
+  .frase-dia:last-child{ border-bottom:none; padding-bottom:0; }
+  .frase-dia-top{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:5px;
+  }
+  .frase-dia-quando{
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--amber);
+  }
+  .frase-dia-tema{ font-size:11px; color:var(--ink-dim); }
+  .frase-dia-texto{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:16px;
+    line-height:1.4;
+    color:var(--ink);
+  }
+
   main.wrap{
     padding-top:calc(var(--header-h) + 26px);
     padding-bottom:calc(var(--tabbar-h) + var(--safe-b) + 40px);
@@ -978,6 +1009,7 @@
   <section class="tab" id="tab-livros" hidden></section>
   <section class="tab" id="tab-habitos" hidden></section>
   <section class="tab" id="tab-ajustes" hidden></section>
+  <section class="tab" id="tab-notificacoes" hidden></section>
 
 </main>
 
@@ -6523,6 +6555,292 @@ function themeLabel(key){
 }
 
 /* ==================================================================
+   NOTIFICAÇÕES — a aba que o sino abre
+   Junta duas coisas que antes ficavam soltas: a frase de cada dia
+   (guardada em historico) e os avisos do app (versao nova, permissao).
+   ================================================================== */
+const APP_VERSION = '1.11';
+const FRASES_DIA_KEY = 'frases_dia_v1';
+const FRASES_DIA_MAX = 60;
+const AVISOS_VISTOS_KEY = 'avisos_vistos_v1';
+const UPDATE_STATE_KEY = 'update_state_v1';
+const DIAS_DESATUALIZADO = 7;
+
+/* Texto que vem de fora (versao.json) entra no innerHTML: escapa. */
+function txt(valor){
+  return String(valor === undefined || valor === null ? '' : valor)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function isoDe(d){
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+/* Data local, nao UTC: "hoje" tem que ser o dia do usuario. */
+function dataLocalISO(){ return isoDe(new Date()); }
+
+function rotuloData(iso, hoje){
+  if(iso === hoje) return 'Hoje';
+  const alvo = new Date(iso + 'T12:00:00');
+  if(isNaN(alvo.getTime())) return String(iso || '');
+  const ontem = new Date(hoje + 'T12:00:00');
+  ontem.setDate(ontem.getDate() - 1);
+  if(iso === isoDe(ontem)) return 'Ontem';
+  return String(alvo.getDate()).padStart(2, '0') + '/' + String(alvo.getMonth() + 1).padStart(2, '0');
+}
+
+/* ---------- frase do dia, com historico ---------- */
+function historicoFrases(){
+  const h = store.get(FRASES_DIA_KEY, null);
+  if(!Array.isArray(h)) return [];
+  return h.filter(e => e && typeof e.data === 'string' && typeof e.texto === 'string' && e.texto);
+}
+/* Uma frase por dia: se ja existe a de hoje, devolve a mesma. */
+function frasesDoDia(){
+  const hoje = dataLocalISO();
+  const h = historicoFrases();
+  const jaTem = h.filter(e => e.data === hoje);
+  if(jaTem.length) return jaTem[jaTem.length - 1];
+  const q = dailyQuote();
+  const entrada = { data: hoje, texto: q.text, tema: q.theme };
+  h.push(entrada);
+  while(h.length > FRASES_DIA_MAX) h.shift();
+  store.set(FRASES_DIA_KEY, h);
+  return entrada;
+}
+function apagarHistoricoFrases(){
+  store.set(FRASES_DIA_KEY, []);
+  frasesDoDia();
+}
+
+/* ---------- estado da atualizacao do app ---------- */
+function estadoUpdate(){
+  const s = store.get(UPDATE_STATE_KEY, null);
+  if(s && typeof s === 'object' && s.versao) return s;
+  return { versao: null, primeiraVezEm: 0, vistoEm: 0 };
+}
+/* primeiraVezEm e a primeira vez QUE ESTE APARELHO viu a versao nova:
+   e o que permite dizer "voce esta N dias atrasado". */
+function notaUpdate(versao, agora){
+  const s = estadoUpdate();
+  if(s.versao !== versao){
+    s.versao = versao;
+    s.primeiraVezEm = agora;
+  }
+  s.vistoEm = agora;
+  store.set(UPDATE_STATE_KEY, s);
+  return s;
+}
+let _versaoRemotaCache = null;
+/* Sem timeout, uma rede lenta trava renderNotificacoes() e a aba fica em branco.
+   A versao e um extra: nao pode segurar a tela. */
+function comTimeout(promessa, ms){
+  return new Promise((resolve, reject)=>{
+    const t = setTimeout(()=>reject(new Error('versao.json demorou demais')), ms);
+    promessa.then(v=>{ clearTimeout(t); resolve(v); }, e=>{ clearTimeout(t); reject(e); });
+  });
+}
+async function versaoRemota(forcar){
+  if(_versaoRemotaCache && !forcar) return _versaoRemotaCache;
+  try{
+    const r = await comTimeout(fetch(UPDATE_SOURCE + '?v=' + Date.now()), 6000);
+    _versaoRemotaCache = await comTimeout(r.json(), 6000);
+  }catch(e){
+    console.warn('[update] versao.json indisponivel:', e && e.message);
+    _versaoRemotaCache = null;
+  }
+  return _versaoRemotaCache;
+}
+async function versaoInstalada(){
+  const Device = nativePlugin('Device');
+  if(!Device) return null;
+  try{ return (await comTimeout(Device.getInfo(), 4000)).appVersion || null; }
+  catch(e){ console.warn('[update] Device.getInfo demorou:', e && e.message); return null; }
+}
+
+/* Reaproveitado pela aba e pela faixa de atualizacao. */
+function abrirApk(url){
+  if(!url) return;
+  const AppLauncher = nativePlugin('AppLauncher');
+  if(AppLauncher && AppLauncher.openUrl){
+    AppLauncher.openUrl({ url: url }).catch(e=>{
+      console.error('[update] AppLauncher.openUrl falhou:', e);
+      window.open(url, '_system');
+    });
+    return;
+  }
+  const Browser = nativePlugin('Browser');
+  if(Browser && Browser.open){
+    Browser.open({ url: url }).catch(e=>{
+      console.error('[update] Browser.open falhou:', e);
+      window.open(url, '_system');
+    });
+    return;
+  }
+  const win = window.open(url, '_system');
+  if(!win) window.location.href = url;
+}
+
+/* ---------- avisos do app ---------- */
+let _avisos = [];
+async function coletarAvisos(){
+  const agora = Date.now();
+  const cfg = loadNotifCfg();
+  const status = await notifStatus();
+  const instalado = await versaoInstalada();
+  const remota = await versaoRemota();
+  const avisos = [];
+
+  if(instalado && remota && remota.apkVersion){
+    const s = notaUpdate(remota.apkVersion, agora);
+    if(compareVersions(remota.apkVersion, instalado) > 0){
+      const dias = Math.max(0, Math.floor((agora - s.primeiraVezEm) / 86400000));
+      const atrasado = dias >= DIAS_DESATUALIZADO
+        ? ' Você está ' + dias + ' ' + (dias === 1 ? 'dia' : 'dias') + ' numa versão antiga.'
+        : '';
+      avisos.push({
+        id: 'update:' + remota.apkVersion,
+        nivel: 'update',
+        titulo: 'Versão ' + remota.apkVersion + ' disponível',
+        texto: (remota.message || 'Nova versão do Impulso.') + atrasado,
+        acao: 'baixar',
+        url: remota.apkUrl
+      });
+    }
+  }
+
+  if(!status.supported){
+    avisos.push({
+      id: 'sem-plugin',
+      nivel: 'aviso',
+      titulo: 'Você está no navegador',
+      texto: 'A frase do dia e os avisos chegam no app instalado.',
+      acao: null
+    });
+  }else if(!status.granted){
+    avisos.push({
+      id: 'sem-permissao',
+      nivel: 'aviso',
+      titulo: 'Permissão de notificação negada',
+      texto: 'Sem ela a frase do dia não aparece. Toque em Permitir para liberar.',
+      acao: 'ajustes'
+    });
+  }else if(!cfg.enabled){
+    avisos.push({
+      id: 'desligado',
+      nivel: 'aviso',
+      titulo: 'Notificação diária desligada',
+      texto: ' Ligue em Ajustes para receber a frase todo dia às ' + notifHourLabel(cfg) + '.',
+      acao: 'ajustes'
+    });
+  }
+  return avisos;
+}
+async function atualizarAvisos(){
+  _avisos = await coletarAvisos();
+  return _avisos;
+}
+function assinaturaAvisos(avisos){
+  return (avisos || []).map(a => a.id).join('|');
+}
+/* Nao lido = a lista atual de avisos e diferente da ultima vista.
+   Lista vazia significa que nao ha nada pendente, e zera o estado:
+   assim, se o mesmo problema voltar depois de resolvido, ele reaparece. */
+function temAvisoNovo(avisos){
+  if(!avisos || !avisos.length) return false;
+  return assinaturaAvisos(avisos) !== (store.get(AVISOS_VISTOS_KEY, '') || '');
+}
+function marcarAvisosVistos(avisos){
+  const lista = avisos || [];
+  store.set(AVISOS_VISTOS_KEY, lista.length ? assinaturaAvisos(lista) : '');
+}
+
+/* ---------- render da aba ---------- */
+function htmlAviso(a){
+  const acao = a.acao === 'baixar'
+    ? '<button class="mini-btn primary" data-aviso="' + txt(a.id) + '" data-acao="baixar">Baixar</button>'
+    : (a.acao === 'ajustes'
+      ? '<button class="mini-btn" data-aviso="' + txt(a.id) + '" data-acao="ajustes">Abrir Ajustes</button>'
+      : '');
+  return '<div class="row aviso aviso-' + txt(a.nivel) + '">'
+    + '<div class="r-main">'
+    +   '<div class="r-title">' + txt(a.titulo) + '</div>'
+    +   '<div class="r-sub">' + txt(a.texto) + '</div>'
+    + '</div>'
+    + acao
+    + '</div>';
+}
+
+async function renderNotificacoes(){
+  const sec = $('tab-notificacoes');
+  if(!sec) return;
+
+  const hoje = dataLocalISO();
+  const frase = frasesDoDia();
+  const hist = historicoFrases().filter(e => e.data !== hoje);
+  const avisos = await atualizarAvisos();
+  const cfg = loadNotifCfg();
+  const status = await notifStatus();
+
+  const linhas = [frase].concat(hist).map(e =>
+    '<div class="frase-dia">'
+    +   '<div class="frase-dia-top"><span class="frase-dia-quando">' + txt(rotuloData(e.data, hoje))
+    +     '</span><span class="frase-dia-tema">' + txt(themeLabel(e.tema)) + '</span></div>'
+    +   '<div class="frase-dia-texto">' + txt(e.texto) + '</div>'
+    + '</div>').join('');
+
+  const estadoNotif = !status.supported
+    ? 'Só funciona no app instalado'
+    : (!status.granted
+      ? 'Falta a permissão do sistema'
+      : (cfg.enabled ? 'Ativa, todo dia às ' + notifHourLabel(cfg) : 'Desligada'));
+
+  sec.innerHTML =
+      '<p class="tab-intro">A frase que você recebeu (ou receberia) hoje, e o que o app tem a dizer.</p>'
+    + (avisos.length
+        ? '<div class="section-label">Avisos</div><div class="panel" id="avisosPanel">' + avisos.map(htmlAviso).join('') + '</div>'
+        : '<div class="panel"><div class="row"><div class="r-main">'
+            + '<div class="r-title">Tudo em dia</div>'
+            + '<div class="r-sub">Nenhum aviso do app no momento.</div>'
+          + '</div></div></div>')
+    + '<div class="section-label">Frase do dia</div>'
+    + '<div class="panel" id="frasesDia">' + linhas + '</div>'
+    + '<div class="panel">'
+    +   '<h3>Estado do app</h3>'
+    +   '<div class="row"><div class="r-main"><div class="r-title">Notificação diária</div>'
+    +     '<div class="r-sub" id="notifTabStatus">' + txt(estadoNotif) + '</div></div></div>'
+    +   '<div class="row"><div class="r-main"><div class="r-title">Versão instalada</div>'
+    +     '<div class="r-sub">Impulso ' + txt(APP_VERSION) + '</div></div></div>'
+    +   '<div class="row">'
+    +     '<button class="mini-btn" id="notifIrAjustes">Configurar notificação</button>'
+    +     '<button class="mini-btn" id="notifLimparHistorico">Limpar histórico</button>'
+    +   '</div>'
+    + '</div>'
+    + '<footer>' + (hist.length + 1) + ' ' + (hist.length ? 'dias guardados' : 'dia guardado') + '.</footer>';
+
+  sec.querySelectorAll('[data-aviso]').forEach(btn=>{
+    const alvo = avisos.filter(a => a.id === btn.getAttribute('data-aviso'))[0];
+    if(!alvo) return;
+    btn.onclick = ()=>{
+      if(btn.getAttribute('data-acao') === 'baixar'){ abrirApk(alvo.url); return; }
+      switchTab('ajustes');
+    };
+  });
+
+  $('notifIrAjustes').onclick = ()=>switchTab('ajustes');
+  $('notifLimparHistorico').onclick = ()=>{
+    if(!confirm('Apagar o histórico de frases diárias?')) return;
+    apagarHistoricoFrases();
+    renderNotificacoes();
+    toast('Histórico de frases apagado.');
+  };
+
+  marcarAvisosVistos(avisos);
+  paintNotifBell();
+}
+
+/* ==================================================================
    ABAS — navegação inferior
    ================================================================== */
 const TABS = [
@@ -6537,7 +6855,10 @@ const TABS = [
     icon:'<rect x="3.5" y="4" width="17" height="16.5" rx="2.5"/><path d="M8 12.2l2.7 2.7L16 9.6"/>' },
   { key:'ajustes', label:'Ajustes', h1:'Ajustes',
     desc:'Notificação diária, horário e preferências do Impulso.',
-    icon:'<circle cx="12" cy="12" r="3.2"/><path d="M12 3.2v2.4M12 18.4v2.4M3.2 12h2.4M18.4 12h2.4M5.8 5.8l1.7 1.7M16.5 16.5l1.7 1.7M18.2 5.8l-1.7 1.7M7.5 16.5l-1.7 1.7"/>' }
+    icon:'<circle cx="12" cy="12" r="3.2"/><path d="M12 3.2v2.4M12 18.4v2.4M3.2 12h2.4M18.4 12h2.4M5.8 5.8l1.7 1.7M16.5 16.5l1.7 1.7M18.2 5.8l-1.7 1.7M7.5 16.5l-1.7 1.7"/>' },
+  { key:'notificacoes', label:'Avisos', h1:'Notificações',
+    desc:'A frase de cada dia e os avisos do app.',
+    icon:'<path d="M18.2 16.4v-5.8a6.2 6.2 0 1 0-12.4 0v5.8L4 18.6h16z"/><path d="M9.9 21.2a2.3 2.3 0 0 0 4.2 0"/>' }
 ];
 
 let activeTab = 'frases';
@@ -6578,6 +6899,7 @@ function switchTab(key){
   }else if(tab.key === 'ajustes'){
     refreshAjustes();
   }
+  if(tab.key === 'notificacoes') renderNotificacoes();
   paintNotifBell();
 
   window.scrollTo(0, 0);
@@ -7137,15 +7459,20 @@ async function notifStatus(){
   const LN = notifPlugin();
   if(!LN || !LN.checkPermissions) return { supported:false, granted:false };
   try{
-    const res = await LN.checkPermissions();
+    /* O plugin nativo pode nunca responder; o sino e a aba nao podem
+       ficar esperando um dialogo de permissao travado. */
+    const res = await Promise.race([
+      LN.checkPermissions(),
+      new Promise(r=>setTimeout(()=>r({ display:'timeout' }), 4000))
+    ]);
     return { supported:true, granted: res && res.display === 'granted' };
   }catch(e){
     return { supported:true, granted:false };
   }
 }
 
-/* Sino do header: mostra o estado real da notificacao diaria e leva
-   para o painel de configuracao quando tocado. */
+/* Sino do header: a COR mostra o estado da notificacao diaria e o
+   PONTO mostra que tem aviso novo na aba Notificacoes. Tocar abre a aba. */
 async function paintNotifBell(){
   const bell = $('hdrBell');
   const dot = $('hdrBellDot');
@@ -7168,10 +7495,17 @@ async function paintNotifBell(){
     rotulo = 'Notificações desligadas. Toque para ligar';
   }
 
+  const novos = temAvisoNovo(_avisos);
+  const quantos = (state === 'pending' ? 1 : 0) + (_avisos || []).length;
+  const badge = novos
+    ? quantos + (quantos === 1 ? ' aviso novo' : ' avisos novos')
+    : 'nenhum aviso novo';
+
   bell.dataset.state = state;
-  bell.setAttribute('aria-label', rotulo);
-  bell.title = rotulo;
-  if(dot) dot.hidden = state !== 'pending';
+  bell.setAttribute('aria-label', rotulo + ' — ' + badge);
+  bell.title = rotulo + ' — ' + badge;
+  bell.dataset.unread = novos ? '1' : '0';
+  if(dot) dot.hidden = !novos && state !== 'pending';
 }
 
 async function cancelScheduled(){
@@ -7340,7 +7674,7 @@ function renderAjustes(){
     + '</div>'
     + '<div class="panel">'
     + '<h3>Sobre</h3>'
-    + '<p class="sub">Impulso 1.4 — frases, livros, hábitos e um empurrão diário.</p>'
+    + '<p class="sub">Impulso ' + APP_VERSION + ' — frases, livros, hábitos e um empurrão diário.</p>'
     + '<div class="row">'
     +   '<div class="r-main"><div class="r-title">Apagar hábitos</div>'
     +     '<div class="r-sub">Zera a sequência e o histórico do checklist.</div></div>'
@@ -7431,8 +7765,10 @@ async function refreshAjustes(){
 function wireGlobalEvents(){
   $('bookSheet').onclick = (e)=>{ if(e.target === $('bookSheet')) closeSheet(); };
 
+  /* O sino abre a aba de Notificacoes (a frase do dia e os avisos).
+     Arrastar para a direita e para baixo ainda da acesso aos Ajustes. */
   $('hdrBell').onclick = ()=>{
-    switchTab('ajustes');
+    switchTab('notificacoes');
     const painel = $('notifPanel');
     if(painel) painel.scrollIntoView({ behavior:'smooth', block:'start' });
   };
@@ -7497,6 +7833,10 @@ function wireGlobalEvents(){
     // a permissao pode ter sido concedida/cancelada nas configuracoes do sistema
     paintNotifBell();
     syncNotifications().catch(()=>{});
+    // ao voltar para o app: novo dia = nova frase, e os avisos sao reavaliados
+    frasesDoDia();
+    if(activeTab === 'notificacoes') renderNotificacoes();
+    else atualizarAvisos().then(paintNotifBell);
   });
 }
 
@@ -7509,6 +7849,8 @@ function initApp(){
   // carrega o acervo antes de resolver a aba, para a listagem ja nascer pronta
   BOOKS = LIVROS_SEED;
   iniciarLivros();
+  // a frase do dia e registrada sempre, mesmo que o usuario nao abra a aba
+  frasesDoDia();
   const last = store.get('tab_v1', 'frases');
   switchTab(TABS.filter(t=>t.key === last).length ? last : 'frases');
   syncNotifications().catch(()=>{});
@@ -7542,35 +7884,22 @@ function showUpdateBanner(info){
   document.getElementById('updateBtn').onclick = ()=>{
     if(!info.apkUrl) return;
     console.log('[update] Baixar clicado:', info.apkUrl);
-    const AppLauncher = nativePlugin('AppLauncher');
-    if(AppLauncher && AppLauncher.openUrl){
-      AppLauncher.openUrl({ url: info.apkUrl }).then(r=>{
-        console.log('[update] openUrl:', r);
-      }).catch(e=>{
-        console.error('[update] AppLauncher.openUrl falhou:', e);
-        window.open(info.apkUrl, '_system');
-      });
-      return;
-    }
-    const Browser = nativePlugin('Browser');
-    if(Browser && Browser.open){
-      Browser.open({ url: info.apkUrl }).catch(e=>{
-        console.error('[update] Browser.open falhou:', e);
-        window.open(info.apkUrl, '_system');
-      });
-      return;
-    }
-    const win = window.open(info.apkUrl, '_system');
-    if(!win) window.location.href = info.apkUrl;
+    abrirApk(info.apkUrl);
   };
   document.getElementById('updateClose').onclick = ()=>{
     banner.classList.remove('show');
     localStorage.setItem('impulso_update_dismiss', info.apkVersion);
+    /* Fechar a faixa conta como ter visto: o aviso da aba fica lido. */
+    if(_avisos.length) marcarAvisosVistos(_avisos);
+    paintNotifBell();
   };
   banner.classList.add('show');
 }
 
 async function checkForUpdate(){
+  /* Uma unica busca: o resultado alimenta a aba de Notificacoes tambem. */
+  const info = await versaoRemota(true);
+  await atualizarAvisos();
   const Device = nativePlugin('Device');
   console.log('[update] Device plugin:', Device);
   if(!Device) return;
@@ -7579,12 +7908,8 @@ async function checkForUpdate(){
     installed = (await Device.getInfo()).appVersion;
   }catch(e){ console.error('[update] Device.getInfo falhou:', e); return; }
 
-  let info;
-  try{
-    info = await (await fetch(UPDATE_SOURCE + '?v=' + Date.now())).json();
-    console.log('[update] versao.json:', info);
-  }catch(e){ console.error('[update] fetch versao.json falhou:', e); return; }
   if(!info || !info.apkVersion) return;
+  console.log('[update] versao.json:', info);
 
   if(installed === info.apkVersion) return;
   if(localStorage.getItem('impulso_update_dismiss') === info.apkVersion) return;
